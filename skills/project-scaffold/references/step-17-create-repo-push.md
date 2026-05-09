@@ -1,4 +1,4 @@
-# Step H — Create GitHub repo + bootstrap push
+# Step 17 — Create GitHub repo + bootstrap push
 
 Creates the remote on GitHub, sets it as `origin`, and pushes the initial scaffold to `main`, `develop`, and (if opted in) `stage`.
 
@@ -19,15 +19,15 @@ If staging was opted in:
 ALLOW_PUSH_TO_PROTECTED=1 git push -u origin stage
 ```
 
-If Step G detected a non-default override env var name, substitute it for `ALLOW_PUSH_TO_PROTECTED=1`.
+If Step 16 detected a non-default override env var name, substitute it for `ALLOW_PUSH_TO_PROTECTED=1`.
 
-If user picked **Public** in Step 6, replace `--private` with `--public`.
+If user picked **Public** in Step 7, replace `--private` with `--public`.
 
 ## The bootstrap exception (read carefully)
 
 This is the **only** point at which `project-scaffold` pushes directly to protected branches. It exists because there's no way to seed `main` and `develop` on a brand-new remote without a direct push (PRs require a target branch to already exist).
 
-**The exception is push-only and scoped to seeding the remote.** After Step H completes:
+**The exception is push-only and scoped to seeding the remote.** After Step 17 completes:
 
 - All changes (including dep installs, fixups, follow-up commits) go through the standard PR → `develop` flow.
 - Branch protection bypass is **never** authorized for merging PRs.

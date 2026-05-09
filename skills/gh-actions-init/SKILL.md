@@ -74,7 +74,7 @@ If it doesn't: scaffold the stub. The stub lists Render, Vercel, Fly.io, Railway
 
 ### 3. Show summary, halt for confirmation
 
-Render the plan as a fenced code block with emoji headers (same convention as `project-scaffold` Step 7):
+Render the plan as a fenced code block with emoji headers (same convention as `project-scaffold` Step 8):
 
 ```
 🔍 Detected:        <stack + branch model + existing workflows>
@@ -96,7 +96,7 @@ Same gate as `project-scaffold` and `testing-init`. Wait for explicit affirmativ
 
 ## Execution
 
-### Step A: CI structure
+### 5. CI structure
 
 See `references/ci-structure.md` for the per-stack job templates and the extend-vs-create logic.
 
@@ -111,7 +111,7 @@ Per-stack job set:
 - Match the existing file's indentation (default 2 spaces).
 - Preserve any existing `concurrency:` or `permissions:` blocks.
 
-### Step B: release-please
+### 6. release-please
 
 See `references/release-please.md`.
 
@@ -124,13 +124,13 @@ Skill behavior:
 - If `package.json` has `"version": "0.3.1"`, manifest should be `{".": "0.3.1"}` so release-please's first PR generates a clean changelog from the most recent tag.
 - For monorepos with separate frontend/backend versions: see `references/release-please.md` monorepo section.
 
-### Step C: Deploy stub
+### 7. Deploy stub
 
 See `references/deploy-stub.md`.
 
 One file: `.github/workflows/deploy.yml`. Triggers on `v*.*.*` tag pushes (release-please creates these on release-PR merge). Render, Vercel, Fly.io, Railway, GHCR, and SSH/rsync are all listed as commented alternatives with a "How to use this file" header explaining how to pick one and wire up its secrets.
 
-### Step D: Smoke-validate
+### 8. Smoke-validate
 
 Don't run actual workflows from the skill (would require pushing). Instead:
 
@@ -139,7 +139,7 @@ Don't run actual workflows from the skill (would require pushing). Instead:
 
 Don't fail the skill if these tools aren't available — they're nice-to-haves.
 
-### Step E: Report back
+### 9. Report back
 
 Print:
 - ✅ What was added (file paths)

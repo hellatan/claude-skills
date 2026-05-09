@@ -4,11 +4,11 @@
 
 ## The required sister skills
 
-- **`/testing-init`** (Step E) — owns test runner setup (Vitest / Playwright / pytest), test stubs, test scripts, and the test jobs in `ci.yml`.
-- **`/gh-actions-init`** (Step E) — owns the structural CI jobs (lint + typecheck + format:check + build), release-please config + workflow, and the deploy stub.
-- **`/gitflow-init`** (Steps I + J) — owns branch-protection setup and default-branch configuration.
-- **`/precommit-init`** (Step D) — owns pre-commit installation, polyglot config generation, and hook activation.
-- **`/claude-md-init`** (Step A) — owns per-stack CLAUDE.md template selection and writing.
+- **`/testing-init`** (Step 14) — owns test runner setup (Vitest / Playwright / pytest), test stubs, test scripts, and the test jobs in `ci.yml`.
+- **`/gh-actions-init`** (Step 14) — owns the structural CI jobs (lint + typecheck + format:check + build), release-please config + workflow, and the deploy stub.
+- **`/gitflow-init`** (Steps 18 + 19) — owns branch-protection setup and default-branch configuration.
+- **`/precommit-init`** (Step 13) — owns pre-commit installation, polyglot config generation, and hook activation.
+- **`/claude-md-init`** (Step 10) — owns per-stack CLAUDE.md template selection and writing.
 
 All ship as part of the same `claude-skills` repo. Running `scripts/install.sh` installs every skill together, so the dependency is already satisfied for anyone installing from the repo. The check below mainly guards against:
 
@@ -16,7 +16,7 @@ All ship as part of the same `claude-skills` repo. Running `scripts/install.sh` 
 - Users who symlinked or curated a subset of skills
 - A skill being deleted or renamed mid-session
 
-## Upfront availability check (Flow Step 0)
+## Upfront availability check (Flow Step 1)
 
 Before asking the user any project-shape questions in Step 1, verify all sister skills appear in the list of available skills (visible to Claude in system reminders / the available-skills section).
 

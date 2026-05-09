@@ -18,7 +18,7 @@ User says any of:
 ## When NOT to use
 
 - Repo already has `.pre-commit-config.yaml` working — extend manually instead.
-- Brand-new project — `project-scaffold` calls this skill internally for Step D.
+- Brand-new project — `project-scaffold` calls this skill internally for Step 13.
 - User explicitly wants husky + lint-staged — different tool, this skill won't install it.
 
 ## Why pre-commit and not husky
@@ -96,7 +96,7 @@ Same gate as other skills. Wait for explicit affirmative reply.
 
 ## Execution
 
-### Step A: Install the `pre-commit` package
+### 6. Install the `pre-commit` package
 
 Skip if already installed (Step 1 detection). Otherwise:
 
@@ -108,7 +108,7 @@ uv add --dev pre-commit
 
 For Node-only repos with no Python: still use `pip install pre-commit` (it's a small Python tool, doesn't pollute the Node project — pre-commit itself runs out-of-tree). Surface this in the report so the user knows why pip ran.
 
-### Step B: Write `.pre-commit-config.yaml`
+### 7. Write `.pre-commit-config.yaml`
 
 Pick the variant from `references/precommit-config.md`:
 
@@ -121,7 +121,7 @@ The fullstack variants include the critical `bash -c` wrapper for ESLint that st
 
 For **mypy-using** Python configs, the `additional_dependencies:` block must include the project's runtime deps (FastAPI, Pydantic, etc.) so mypy can resolve imports. The reference doc spells out the right starter list.
 
-### Step C: Activate the hook
+### 8. Activate the hook
 
 ```bash
 pre-commit install
@@ -129,7 +129,7 @@ pre-commit install
 
 This requires `.git/` to exist. If not (rare on existing repos), surface the issue and stop.
 
-### Step D: Bump hook revs
+### 9. Bump hook revs
 
 ```bash
 pre-commit autoupdate
@@ -137,7 +137,7 @@ pre-commit autoupdate
 
 Bumps every hook in the config to its current revision so the user doesn't start on stale ones. Idempotent on repeat runs.
 
-### Step E: Smoke test
+### 10. Smoke test
 
 ```bash
 pre-commit run --all-files
@@ -145,7 +145,7 @@ pre-commit run --all-files
 
 This may fix end-of-file-fixer / trailing-whitespace issues on existing files. **Don't fail the smoke test if it does that** — those are intentional auto-fixes. Surface them in the report and ask if the user wants to commit them.
 
-### Step F: Report back
+### 11. Report back
 
 - ✅ Stack detected
 - ✅ Config variant + file written

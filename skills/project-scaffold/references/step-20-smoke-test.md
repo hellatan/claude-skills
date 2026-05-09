@@ -1,4 +1,4 @@
-# Step K — Smoke test
+# Step 20 — Smoke test
 
 Before declaring success, run a smoke test from the project root. **Don't use empty commits** — invoke hooks directly so there's no commit cleanup needed.
 

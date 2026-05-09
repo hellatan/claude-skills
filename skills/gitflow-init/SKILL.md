@@ -5,7 +5,7 @@ description: Set up the main + develop (+ optional stage) branch model on an exi
 
 # gitflow-init
 
-Brings this project's git-flow conventions to an existing repo: `main` + `develop` (+ optional `stage`), branch protection, and `develop` as the default branch on GitHub. Composable with `project-scaffold` (called internally for new projects' Steps I + J).
+Brings this project's git-flow conventions to an existing repo: `main` + `develop` (+ optional `stage`), branch protection, and `develop` as the default branch on GitHub. Composable with `project-scaffold` (called internally for new projects' Steps 18 + 19).
 
 ## When to trigger
 
@@ -19,7 +19,7 @@ User says any of:
 ## When NOT to use
 
 - Repo already has `main` + `develop` working with branch protection — extend manually if needed.
-- Brand-new project — use `project-scaffold` (which calls this skill internally for Steps I + J).
+- Brand-new project — use `project-scaffold` (which calls this skill internally for Steps 18 + 19).
 - User wants Trunk-based or feature-flag-only workflow — this skill is opinionated about main + develop.
 
 ## What this skill does NOT touch
@@ -59,11 +59,11 @@ Three independent decisions:
 
 > Want a `stage` branch as a pre-production rehearsal? Code goes there before `main`, deploys to a staging environment, gives you a click-around safety net before real users see it. If you're solo or just starting out, you can skip this and add it later.
 
-**c. Apply branch protection?** Default yes — but skip silently if Step 1 detected free-tier + private (see Step 5 fallback).
+**c. Apply branch protection?** Default yes — but skip silently if Step 1 detected free-tier + private (see Step 6 fallback).
 
 ### 3. Show summary, halt for confirmation
 
-Render the plan as a code block with emoji headers (same convention as `project-scaffold` Step 7):
+Render the plan as a code block with emoji headers (same convention as `project-scaffold` Step 8):
 
 ```
 🔍 Detected:           <default branch> + <existing branches>
@@ -82,7 +82,7 @@ Same gate as `project-scaffold`. Wait for explicit affirmative reply.
 
 ## Execution
 
-### Step A: Create + push branches that don't exist
+### 5. Create + push branches that don't exist
 
 ```bash
 # Only run for branches that don't exist yet (per Step 1 detection)
@@ -97,11 +97,11 @@ git push -u origin stage
 
 If the user has a global pre-push hook that blocks pushing new branches (uncommon, but possible — see `project-scaffold/references/step-G-prepush-hooks.md`), surface and ask before retrying with the override env var.
 
-### Step B: Apply branch protection
+### 6. Apply branch protection
 
 See `references/branch-protection.md` for the `gh api` script and the 403 fallback message. Apply to `main`, `develop`, and (if created) `stage`.
 
-### Step C: Set `develop` as default branch
+### 7. Set `develop` as default branch
 
 ```bash
 gh repo edit --default-branch develop
@@ -109,7 +109,7 @@ gh repo edit --default-branch develop
 
 PRs default to merging into `develop`. `main` only gets touched by release flows.
 
-### Step D: Report back
+### 8. Report back
 
 Print:
 - ✅ What was created (branches)
@@ -135,4 +135,4 @@ Next steps:
 - **`develop` as default branch** — PRs land in `develop` first; `main` stays release-only. release-please opens its release PR from `develop` → `main`. `main` getting touched only on release means the deploy workflow tied to `v*.*.*` tags is unambiguously the production trigger.
 - **`stage` is opt-in** — most projects don't need it day one; adding it later is a one-command operation.
 - **Skip protection on free-tier private** — branch protection requires GitHub Pro for private repos. The skill scaffolds the rest of the workflow and surfaces the limitation rather than failing the whole flow.
-- **Composes with `project-scaffold`** — its Steps I + J point directly at `references/branch-protection.md` and the `gh repo edit --default-branch develop` command. Run order doesn't matter (project-scaffold wraps gitflow-init's logic; gitflow-init standalone is for retrofits).
+- **Composes with `project-scaffold`** — its Steps 18 + 19 point directly at `references/branch-protection.md` and the `gh repo edit --default-branch develop` command. Run order doesn't matter (project-scaffold wraps gitflow-init's logic; gitflow-init standalone is for retrofits).

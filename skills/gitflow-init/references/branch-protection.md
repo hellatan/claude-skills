@@ -1,4 +1,4 @@
-# Step I — Branch protection
+# Branch protection — `gh api` script + 403 fallback
 
 Skip this step entirely if Step 6's check showed **free-tier + private repo** (GitHub returns 403 in that case — branch protection on private repos requires Pro). Otherwise, apply protection to `main`, `develop`, and (if staging enabled) `stage`. The required status check `contexts` must match the `name:` of each CI job in `.github/workflows/ci.yml` exactly.
 
