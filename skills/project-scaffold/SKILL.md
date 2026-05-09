@@ -156,7 +156,7 @@ If the user picked private and is on free tier, **warn now, not later**:
 
 Render the plan as a fenced code block with emoji-prefixed group headers (not a markdown bullet section). Show only choices made for *this* user's project. End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
 
-See `references/step-8-summary-template.md` for the layout and rules.
+See `references/step-08-summary-template.md` for the layout and rules.
 
 ### 9. **HALT — REAL CONFIRMATION GATE**
 
@@ -303,7 +303,7 @@ This is what the scaffold enables out of the box:
 - `references/step-16-prepush-hooks.md` — global pre-push hook detection + warning message
 - `references/step-17-create-repo-push.md` — `gh repo create` + bootstrap push sequence + bootstrap-exception contract
 - `references/gitignores.md` — `.gitignore` per stack
-- `references/step-8-summary-template.md` — emoji-grouped pre-execution summary
+- `references/step-08-summary-template.md` — emoji-grouped pre-execution summary
 - `references/step-20-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
 - `references/step-21-report-template.md` — verbatim final report + "Next steps" block
 - `references/configs/` — per-stack bootstrap config templates
