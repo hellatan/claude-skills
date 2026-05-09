@@ -246,15 +246,13 @@ See `references/step-H-create-repo-push.md` for the bash sequence and the full b
 
 Skip entirely if Step 6 showed free-tier + private repo. Otherwise apply protection to `main`, `develop`, and (if staging enabled) `stage`, requiring the CI status checks to pass.
 
-See `references/step-I-branch-protection.md` for the bash function and the 403-fallback message.
+Owned by `/gitflow-init`. See its `references/branch-protection.md` for the bash function and the 403-fallback message.
 
 ### Step J: Set develop as default branch
 
-```bash
-gh repo edit --default-branch develop
-```
+`gh repo edit --default-branch develop` — PRs default to merging into `develop`; `main` only gets touched by release-please's release PRs.
 
-PRs default to merging into `develop`. `main` only gets touched by release-please's release PRs.
+Owned by `/gitflow-init` (Step C of its standalone flow).
 
 ### Step K: Smoke test (verify the scaffold actually works)
 
@@ -309,7 +307,6 @@ This is what the scaffold enables out of the box:
 - `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
-- `references/step-I-branch-protection.md` — `gh api` protection script + 403 fallback
 - `references/step-K-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
 - `references/step-L-report-template.md` — verbatim final report + "Next steps" block
 - `references/configs/` — per-stack bootstrap config templates
@@ -317,10 +314,11 @@ This is what the scaffold enables out of the box:
   - `precommit-unified.md`, `root-package-scripts.md`, `python-dev-script.md`
 - `references/explainers/concepts.md` — plain-English concept explainers
 
-### Owned by sister skills (Step E delegates here)
+### Owned by sister skills
 
-- **`/testing-init`** — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
-- **`/gh-actions-init`** — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
+- **`/testing-init`** (Step E) — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
+- **`/gh-actions-init`** (Step E) — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
+- **`/gitflow-init`** (Steps I + J) — branch protection + default-branch setting (+ develop/stage creation for retrofit). Templates: `skills/gitflow-init/references/branch-protection.md`.
 
 ## When NOT to use this skill
 
