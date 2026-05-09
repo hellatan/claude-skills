@@ -226,31 +226,9 @@ See `references/step-E-delegate.md` for what each sister skill owns, the manifes
 
 ### Step F: Git init with main + develop (+ optional stage)
 
-```bash
-git init -b main
-git add .
-git commit -m "chore: initial scaffold"
-git branch develop
-```
+Initialize git, create `main` + `develop` (+ `stage` if opted in), check out `develop`, and activate pre-commit hooks (deferred from Step D since `pre-commit install` needs `.git/` to exist).
 
-If staging was opted in:
-```bash
-git branch stage
-```
-
-Switch to `develop`:
-```bash
-git checkout develop
-```
-
-**Now activate pre-commit hooks** (deferred from Step D because `pre-commit install` requires `.git/` to exist):
-
-```bash
-pre-commit install
-pre-commit autoupdate
-```
-
-`autoupdate` bumps hook revisions to current versions so the user doesn't start out on stale ones.
+See `references/step-F-git-init.md` for the bash sequence.
 
 ### Step G: Detect global pre-push hooks before pushing
 
@@ -349,6 +327,7 @@ This is what the scaffold enables out of the box:
 
 - `references/sister-skills-dependency.md` — what Step 0 checks for and why
 - `references/step-E-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
+- `references/step-F-git-init.md` — git init + branch creation + pre-commit activation sequence
 - `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
