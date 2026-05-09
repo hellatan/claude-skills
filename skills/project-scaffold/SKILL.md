@@ -177,7 +177,7 @@ Once confirmed, proceed through these steps without further halts (unless someth
 `mkdir -p <parent>/<name>`, `cd` in. **For Next.js projects, run `create-next-app` FIRST with `--skip-git`** — see `references/configs/nextjs.md` for the exact flags and post-scaffold cleanup (delete the stub `CLAUDE.md`, keep `AGENTS.md`).
 
 Write to repo root:
-- `CLAUDE.md` — see `references/claude-md-templates.md`
+- `CLAUDE.md` — owned by `/claude-md-init`; see its `references/templates.md`
 - `.gitignore` — see `references/gitignores.md`
 - `README.md` — minimal: `# <project-name>` + one-line description placeholder
 - `.editorconfig` — see `references/configs/editorconfig.md`
@@ -302,7 +302,6 @@ This is what the scaffold enables out of the box:
 - `references/step-F-git-init.md` — git init + branch creation + pre-commit activation sequence
 - `references/step-G-prepush-hooks.md` — global pre-push hook detection + warning message
 - `references/step-H-create-repo-push.md` — `gh repo create` + bootstrap push sequence + bootstrap-exception contract
-- `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
 - `references/step-K-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
@@ -318,6 +317,7 @@ This is what the scaffold enables out of the box:
 - **`/gh-actions-init`** (Step E) — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
 - **`/gitflow-init`** (Steps I + J) — branch protection + default-branch setting (+ develop/stage creation for retrofit). Templates: `skills/gitflow-init/references/branch-protection.md`.
 - **`/precommit-init`** (Step D) — pre-commit at root, polyglot (Python / Node / fullstack). Templates: `skills/precommit-init/references/precommit-config.md`.
+- **`/claude-md-init`** (Step A) — per-stack CLAUDE.md templates. Templates: `skills/claude-md-init/references/templates.md`.
 
 ## When NOT to use this skill
 

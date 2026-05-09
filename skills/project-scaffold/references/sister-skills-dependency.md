@@ -8,6 +8,7 @@
 - **`/gh-actions-init`** (Step E) — owns the structural CI jobs (lint + typecheck + format:check + build), release-please config + workflow, and the deploy stub.
 - **`/gitflow-init`** (Steps I + J) — owns branch-protection setup and default-branch configuration.
 - **`/precommit-init`** (Step D) — owns pre-commit installation, polyglot config generation, and hook activation.
+- **`/claude-md-init`** (Step A) — owns per-stack CLAUDE.md template selection and writing.
 
 All ship as part of the same `claude-skills` repo. Running `scripts/install.sh` installs every skill together, so the dependency is already satisfied for anyone installing from the repo. The check below mainly guards against:
 
@@ -21,6 +22,6 @@ Before asking the user any project-shape questions in Step 1, verify all sister 
 
 If any is missing, abort immediately — don't proceed to Step 1 — with this message:
 
-> `/project-scaffold` delegates several steps to sister skills (`/testing-init`, `/gh-actions-init`, `/gitflow-init`, `/precommit-init`). One or more isn't installed in this Claude Code instance. Install the full skill family — they ship together in the `claude-skills` repo — then retry. (For the typical setup: `~/projects/claude-skills/scripts/install.sh`.)
+> `/project-scaffold` delegates several steps to sister skills (`/testing-init`, `/gh-actions-init`, `/gitflow-init`, `/precommit-init`, `/claude-md-init`). One or more isn't installed in this Claude Code instance. Install the full skill family — they ship together in the `claude-skills` repo — then retry. (For the typical setup: `~/projects/claude-skills/scripts/install.sh`.)
 
 Reasoning: a partial scaffold that gets several steps in and dead-ends at a delegation point is much worse than a fast upfront refusal. Failing before user time is invested keeps the failure cheap.
