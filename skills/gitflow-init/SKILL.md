@@ -1,0 +1,138 @@
+---
+name: gitflow-init
+description: Set up the main + develop (+ optional stage) branch model on an existing repo, push the new branches, apply branch protection, and switch the GitHub default branch to develop. Use when the user wants to "set up gitflow", "add a develop branch", "configure branch protection", "set up a PR-flow workflow", or otherwise bring this project's git workflow conventions to a repo that doesn't have them yet. Detects current branch state, idempotent — won't recreate branches that exist or stomp on existing protection rules without consent.
+---
+
+# gitflow-init
+
+Brings this project's git-flow conventions to an existing repo: `main` + `develop` (+ optional `stage`), branch protection, and `develop` as the default branch on GitHub. Composable with `project-scaffold` (called internally for new projects' Steps I + J).
+
+## When to trigger
+
+User says any of:
+- "set up gitflow / git-flow on this repo"
+- "add a develop branch"
+- "configure branch protection"
+- "set up a PR-flow workflow"
+- "make develop the default branch"
+
+## When NOT to use
+
+- Repo already has `main` + `develop` working with branch protection — extend manually if needed.
+- Brand-new project — use `project-scaffold` (which calls this skill internally for Steps I + J).
+- User wants Trunk-based or feature-flag-only workflow — this skill is opinionated about main + develop.
+
+## What this skill does NOT touch
+
+- **Initial commit / `git init`** — assumes the repo already has commits on `main` (or whatever the default branch is).
+- **Tests, CI, release-please, deploy** — separate skills (`testing-init`, `gh-actions-init`).
+- **Pre-commit hooks** — separate skill (`precommit-init`).
+
+---
+
+## Flow
+
+### 1. Detect current state
+
+Read these without asking:
+
+```bash
+default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+has_develop=$(git ls-remote --heads origin develop | grep -q . && echo true || echo false)
+has_stage=$(git ls-remote --heads origin stage | grep -q . && echo true || echo false)
+
+# Account plan (matters for branch protection on private repos)
+gh auth status
+gh api user --jq .plan.name 2>/dev/null
+gh repo view --json visibility -q .visibility
+```
+
+Surface findings: *"Detected: default branch `main`, no `develop`, no `stage`, repo is private on free tier — branch protection won't apply."*
+
+### 2. Pick scope
+
+Three independent decisions:
+
+**a. Create `develop`?** Default yes if it doesn't exist. The whole skill's premise is that work flows through `develop`.
+
+**b. Create `stage`?** Default no. Ask:
+
+> Want a `stage` branch as a pre-production rehearsal? Code goes there before `main`, deploys to a staging environment, gives you a click-around safety net before real users see it. If you're solo or just starting out, you can skip this and add it later.
+
+**c. Apply branch protection?** Default yes — but skip silently if Step 1 detected free-tier + private (see Step 5 fallback).
+
+### 3. Show summary, halt for confirmation
+
+Render the plan as a code block with emoji headers (same convention as `project-scaffold` Step 7):
+
+```
+🔍 Detected:           <default branch> + <existing branches>
+🌿 Branches to create: <develop | develop + stage | none if already there>
+🔒 Branch protection:  <will apply to main + develop (+ stage) | skipping (free tier + private)>
+🐙 Default branch:     <set to develop | already develop>
+```
+
+End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
+
+### 4. **HALT for confirmation**
+
+Same gate as `project-scaffold`. Wait for explicit affirmative reply.
+
+---
+
+## Execution
+
+### Step A: Create + push branches that don't exist
+
+```bash
+# Only run for branches that don't exist yet (per Step 1 detection)
+git fetch origin
+git branch develop origin/$default_branch  # base develop off the current default
+git push -u origin develop
+
+# If staging opted in:
+git branch stage origin/$default_branch
+git push -u origin stage
+```
+
+If the user has a global pre-push hook that blocks pushing new branches (uncommon, but possible — see `project-scaffold/references/step-G-prepush-hooks.md`), surface and ask before retrying with the override env var.
+
+### Step B: Apply branch protection
+
+See `references/branch-protection.md` for the `gh api` script and the 403 fallback message. Apply to `main`, `develop`, and (if created) `stage`.
+
+### Step C: Set `develop` as default branch
+
+```bash
+gh repo edit --default-branch develop
+```
+
+PRs default to merging into `develop`. `main` only gets touched by release flows.
+
+### Step D: Report back
+
+Print:
+- ✅ What was created (branches)
+- ✅ What was protected (or skipped with reason)
+- ✅ Default branch state
+- 📋 Next steps:
+
+```
+Next steps:
+1. Open new feature branches off `develop`, not `main`
+2. PRs target `develop`. Releases: merge `develop` → `main` (release-please opens the release PR)
+3. (If you don't have CI yet) Run `/gh-actions-init` to add the workflows that branch protection will require
+```
+
+---
+
+## Reference files
+
+- `references/branch-protection.md` — `gh api` protection script + 403 fallback message
+
+## Why these defaults
+
+- **`develop` as default branch** — PRs land in `develop` first; `main` stays release-only. release-please opens its release PR from `develop` → `main`. `main` getting touched only on release means the deploy workflow tied to `v*.*.*` tags is unambiguously the production trigger.
+- **`stage` is opt-in** — most projects don't need it day one; adding it later is a one-command operation.
+- **Skip protection on free-tier private** — branch protection requires GitHub Pro for private repos. The skill scaffolds the rest of the workflow and surfaces the limitation rather than failing the whole flow.
+- **Composes with `project-scaffold`** — its Steps I + J point directly at `references/branch-protection.md` and the `gh repo edit --default-branch develop` command. Run order doesn't matter (project-scaffold wraps gitflow-init's logic; gitflow-init standalone is for retrofits).
