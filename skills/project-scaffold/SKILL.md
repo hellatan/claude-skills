@@ -146,36 +146,9 @@ If the user picked private and is on free tier, **warn now, not later**:
 
 ### 7. Show summary, halt for confirmation
 
-Render the plan as a **code block with emoji-prefixed group headers**, not as a markdown section with bold headers and bullet lists. The code-block-in-monospace layout makes the summary scannable at a glance and visually distinct from surrounding chat. Use plain-English bullets — no jargon. Show only choices made for *this* user's project (don't list options they didn't pick). For omitted-but-decided items, add a parenthetical line like `(skipping staging — you said no)`.
+Render the plan as a fenced code block with emoji-prefixed group headers (not a markdown bullet section). Show only choices made for *this* user's project. End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
 
-Use this layout (only the emoji headers / structure are fixed — fill in stack/branch/GitHub specifics from the user's choices):
-
-````
-📁 Project name:    <name>
-📁 Where it'll live: <parent>/<name>
-🔨 Stack:
-   - <framework — plain-English, e.g. "Next.js (React + TypeScript) — handles both frontend and API routes">
-   - <layout note, e.g. "Single-app layout (no separate backend service)">
-🌿 Branches:
-   - `main` — release-only (release-please touches it)
-   - `develop` — your day-to-day branch (default for PRs)
-   (skipping staging — you said no)              ← include only if user opted out
-🧹 Code quality (auto-runs on commit):
-   - Pre-commit at repo root, single config
-   - <linters/formatters per stack, e.g. "ESLint + Prettier for TS/TSX">
-🤖 GitHub Actions (auto-runs on every PR):
-   - lint + typecheck → unit tests → integration tests → e2e tests → build
-   - Releases handled automatically by release-please
-🚀 Deploy:
-   - Stub workflow created — you'll fill in deploy target later
-🐙 GitHub:
-   - <Public|Private> repo under @<user>
-   - Branch protection: <applied|skipped (reason, e.g. "free tier on private repo")>
-````
-
-End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
-
-**Note on emojis:** these scaffold-summary emojis are explicitly user-requested for this surface. They override the general "no emojis unless asked" default *only* for this Step 7 summary — keep all other text in the conversation emoji-free.
+See `references/step-7-summary-template.md` for the layout and rules.
 
 ### 8. **HALT — REAL CONFIRMATION GATE**
 
