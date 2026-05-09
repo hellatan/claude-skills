@@ -232,20 +232,9 @@ See `references/step-F-git-init.md` for the bash sequence.
 
 ### Step G: Detect global pre-push hooks before pushing
 
-Check if the user has a global pre-push hook that might block bootstrap pushes:
+Before Step H pushes to `main`/`develop`, check whether the user has a global pre-push hook that might block protected-branch pushes. If one exists, ask about override env var conventions before attempting the push — surfacing this *before* Step H keeps the bootstrap atomic.
 
-```bash
-git config --global core.hooksPath
-ls -la $(git config --global core.hooksPath)/pre-push 2>/dev/null
-```
-
-If a hook exists, **warn the user explicitly**:
-
-> 👀 Detected a global git hook at `<path>` that may block pushing to `main`/`develop`. The bootstrap push needs to seed those branches once before normal protection rules kick in. After this initial push, all future changes go through the normal Pull Request flow.
->
-> If your hook supports an override env var (commonly `ALLOW_PUSH_TO_PROTECTED=1`), I'll use it for the bootstrap push only. Confirm the env var name your hook expects, or let me know if it's something else.
-
-Wait for confirmation before pushing.
+See `references/step-G-prepush-hooks.md` for the detection commands and the verbatim warning message.
 
 ### Step H: Create GitHub repo and push
 
@@ -328,6 +317,7 @@ This is what the scaffold enables out of the box:
 - `references/sister-skills-dependency.md` — what Step 0 checks for and why
 - `references/step-E-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
 - `references/step-F-git-init.md` — git init + branch creation + pre-commit activation sequence
+- `references/step-G-prepush-hooks.md` — global pre-push hook detection + warning message
 - `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
