@@ -29,11 +29,28 @@ User says any of:
 - "init a new repo"
 - "new project with claude config"
 
+## Requires (sister skills)
+
+Step E delegates to two specialized skills. **Both must be installed** before invoking `/project-scaffold`:
+
+- **`/testing-init`** — owns test runner setup (Vitest / Playwright / pytest), test stubs, and the test jobs in `ci.yml`.
+- **`/gh-actions-init`** — owns the structural CI jobs, release-please config + workflow, and the deploy stub.
+
+Both ship as part of the same `claude-skills` repo — running `scripts/install.sh` installs all three together, so this dependency is already satisfied for anyone installing from the repo. If you've installed `/project-scaffold` standalone, also install the two sister skills before running this one.
+
 ---
 
 ## Flow
 
 Run these steps in order. **Ask questions one at a time.** For decision points where the skill has a strong default, state the default and only wait for an override.
+
+### 0. Verify sister skills are installed (fail fast)
+
+Before asking the user any questions, confirm that `/testing-init` and `/gh-actions-init` appear in the list of available skills (visible in the system reminders). If either is missing, abort immediately with:
+
+> `/project-scaffold` delegates Step E (tests + GitHub Actions workflows) to `/testing-init` and `/gh-actions-init`. One or both isn't installed in this Claude Code instance. Install the full skill family — they ship together in the `claude-skills` repo — then retry. (For the typical setup: `~/projects/claude-skills/scripts/install.sh`.)
+
+Don't proceed to Step 1 until both sister skills are available. A partial scaffold that gets to Step E and dead-ends is much worse than a fast upfront refusal.
 
 ### 1. Project name + location
 
