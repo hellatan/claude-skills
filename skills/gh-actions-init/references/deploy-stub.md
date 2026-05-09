@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # ─── HOW TO USE THIS FILE ───────────────────────────────────────
       # 1. Pick a deploy target from the list below and uncomment its block.
@@ -54,7 +54,7 @@ jobs:
       # ────────────────────────────────────────────────────────────────
 
       # TODO: Build step (or download from CI artifact). Example:
-      # - uses: actions/setup-node@v4
+      # - uses: actions/setup-node@v6
       #   with:
       #     node-version: 22
       #     cache: npm
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # TODO: staging deploy steps (typically point to a staging URL/instance)
       - run: echo "TODO — fill in deploy steps for staging"
 
@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # TODO: prod deploy steps
       - run: echo "TODO — fill in deploy steps for production"
 ```
@@ -152,7 +152,7 @@ jobs:
   deploy-prod:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Determine which package
         id: which
         run: |
