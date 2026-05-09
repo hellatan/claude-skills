@@ -146,7 +146,9 @@ If the user picked private and is on free tier, **warn now, not later**:
 
 ### 7. Show summary, halt for confirmation
 
-Print a plain-English summary of everything about to happen. Group by category (project, stack, branches, code quality, CI, deploy, GitHub) and use plain language — no jargon. Show only the choices made for *this* user's project (don't list options they didn't pick). End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
+Render the plan as a fenced code block with emoji-prefixed group headers (not a markdown bullet section). Show only choices made for *this* user's project. End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
+
+See `references/step-7-summary-template.md` for the layout and rules.
 
 ### 8. **HALT — REAL CONFIRMATION GATE**
 
