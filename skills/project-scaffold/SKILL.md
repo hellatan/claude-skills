@@ -220,27 +220,9 @@ The config dispatches by file pattern: staging only Python files runs only Pytho
 
 ### Step E: Tests + GitHub Actions (delegate to sister skills)
 
-This step is delegated to two specialized skills that own the templates. Run their **execution phases** in order, treating the stack as already-known and skipping their own detection/confirmation gates (project-scaffold has already collected those answers in Steps 1–8 above).
+Run `/testing-init`'s execution phase, then `/gh-actions-init`'s. Treat the stack as already-known and skip their detection + summary-halt gates (project-scaffold's Step 8 covered those).
 
-1. **Run `/testing-init`'s execution phase.** Reads `skills/testing-init/SKILL.md` for the flow. This handles:
-   - Installing test runners (Vitest + Playwright for Node, pytest for Python; React projects also get `@testing-library/react` + jsdom).
-   - Writing runner configs (`vitest.config.ts`, `playwright.config.ts`, `[tool.pytest.ini_options]` block).
-   - Scaffolding passing smoke-test stubs.
-   - Wiring `test` / `test:unit` / `test:integration` / `test:e2e` scripts.
-   - Adding the test jobs to `.github/workflows/ci.yml` (creates the file if it doesn't exist yet).
-
-2. **Run `/gh-actions-init`'s execution phase.** Reads `skills/gh-actions-init/SKILL.md` for the flow. This handles:
-   - Adding the structural CI jobs (lint + typecheck + format:check + build) to `ci.yml`. **Will detect and append to** the test jobs `testing-init` just wrote.
-   - Scaffolding `release-please.yml` + `release-please-config.json` + `.release-please-manifest.json`.
-   - Scaffolding `deploy.yml` with the deploy-target picker.
-
-   For new projects, the manifest version starts at `0.0.0` so release-please's first PR cleanly bumps to `0.1.0`. `package.json` / `pyproject.toml` `version` must match — set both to `0.0.0` at scaffold time (Step B already does this).
-
-**Sub-skill protocol** when invoked from project-scaffold:
-- Skip their detection step — pass the stack from project-scaffold's Step 1 + Step 3.
-- Skip their summary-halt step — project-scaffold's Step 8 confirmation covered everything.
-- Run their execution + report steps as documented.
-- Surface their reports inline as part of project-scaffold's Step L final report.
+See `references/step-E-delegate.md` for what each sister skill owns, the manifest-version invariant, and the full sub-skill protocol.
 
 ### Step F: Git init with main + develop (+ optional stage)
 
@@ -366,6 +348,7 @@ This is what the scaffold enables out of the box:
 ### Owned by this skill
 
 - `references/sister-skills-dependency.md` — what Step 0 checks for and why
+- `references/step-E-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
 - `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
