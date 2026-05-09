@@ -1,6 +1,6 @@
-# Step F — Git init + branches + activate pre-commit
+# Step 15 — Git init + branches + activate pre-commit
 
-Initialize the git repo, create the long-lived branches, and activate pre-commit hooks (deferred from Step D, since `pre-commit install` requires `.git/` to exist).
+Initialize the git repo, create the long-lived branches, and activate pre-commit hooks (deferred from Step 13, since `pre-commit install` requires `.git/` to exist).
 
 ## Sequence
 

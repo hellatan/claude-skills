@@ -1,4 +1,4 @@
-# Step 7 — Pre-execution summary template
+# Step 8 — Pre-execution summary template
 
 Render the plan as a fenced code block with emoji-prefixed group headers (not a markdown bullet section). Monospace + emoji groups makes the summary scannable and visually distinct from surrounding chat.
 

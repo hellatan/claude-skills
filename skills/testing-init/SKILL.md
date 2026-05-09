@@ -72,7 +72,7 @@ If user wants the full release-please + deploy stack later, point them at `gh-ac
 
 ### 5. Show summary, halt for confirmation
 
-Render the plan as a fenced code block with emoji headers (same convention as `project-scaffold`'s Step 7). Show only choices made.
+Render the plan as a fenced code block with emoji headers (same convention as `project-scaffold`'s Step 8). Show only choices made.
 
 ```
 🔍 Detected:        <stack summary>
@@ -94,13 +94,13 @@ Same gate as `project-scaffold` — wait for explicit affirmative reply before a
 
 ## Execution
 
-### Step A: Install dev deps
+### 7. Install dev deps
 
 Per stack:
 - Node: `npm install --save-dev <runners>` — see `references/runners.md` for the exact list per stack.
 - Python: add to `[project.optional-dependencies].dev` (or `[dependency-groups].dev` for uv) in `pyproject.toml`, then `pip install -e ".[dev]"` (or `uv sync`).
 
-### Step B: Write runner configs
+### 8. Write runner configs
 
 - Node + Vitest: `vitest.config.ts` (with React plugin if React detected, jsdom env if frontend).
 - Node + Playwright: `playwright.config.ts`.
@@ -108,7 +108,7 @@ Per stack:
 
 All templates: `references/runners.md`.
 
-### Step C: Write test stubs
+### 9. Write test stubs
 
 Smoke tests that pass and exercise the runner end-to-end. See `references/test-stubs.md` for the per-stack stub bodies.
 
@@ -120,23 +120,23 @@ Smoke tests that pass and exercise the runner end-to-end. See `references/test-s
 
 **Don't overwrite existing test files.** If a path already exists, skip and note it in the report.
 
-### Step D: Wire scripts
+### 10. Wire scripts
 
 - Node: extend `package.json` `"scripts"` with `test`, `test:unit`, `test:integration`, `test:e2e` (only the scopes the user chose). See `references/scripts.md`.
 - Python: extend `scripts/dev.py` if it exists (project-scaffold projects have one), otherwise document the raw commands in the report.
 
-### Step E (optional): Wire CI
+### 11. (Optional) Wire CI
 
 Only if user opted in at Step 4. See `references/ci-test-job.md`.
 
-### Step F: Smoke-run the new tests
+### 12. Smoke-run the new tests
 
 - Node: `npm run test` (and `npm run test:e2e` if e2e in scope — Playwright will install browsers on first run; warn the user that takes ~30s).
 - Python: `pytest`.
 
 If anything fails, **stop and report**. Don't claim success on red.
 
-### Step G: Report back
+### 13. Report back
 
 Print:
 - ✅ What was installed

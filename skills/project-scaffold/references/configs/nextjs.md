@@ -27,7 +27,7 @@ Flags explained:
 - `--import-alias "@/*"` — `@/components/Button` style imports
 - `--no-tailwind` — leave styling choice to the user (they can add Tailwind, CSS modules, styled-components, etc.)
 - `--no-turbopack` — skip Turbopack prompt; project can opt in later if desired
-- `--skip-git` — skill handles `git init` at the repo root in Step F (otherwise create-next-app initializes its own `.git/` and conflicts with later git-init)
+- `--skip-git` — skill handles `git init` at the repo root in Step 15 (otherwise create-next-app initializes its own `.git/` and conflicts with later git-init)
 
 For a fullstack project where the frontend is in a subdirectory:
 
@@ -49,7 +49,7 @@ npx create-next-app@latest frontend \
 `create-next-app` leaves behind files the skill needs to handle:
 
 - **`AGENTS.md`** — Next 16+ ships this as a heads-up about breaking changes for AI tools. Keep it as-is, it's useful context for any LLM working on the project.
-- **`CLAUDE.md`** — Next 16+ ships a stub. **Delete it** — the skill writes its own CLAUDE.md at repo root in Step A. Keeping the Next stub creates two CLAUDE.md files (subdir vs root) that conflict.
+- **`CLAUDE.md`** — Next 16+ ships a stub. **Delete it** — the skill writes its own CLAUDE.md at repo root in Step 10. Keeping the Next stub creates two CLAUDE.md files (subdir vs root) that conflict.
 - **`.git/`** — should not exist if `--skip-git` was passed. If it does (older create-next-app), remove it before the skill's `git init`:
   ```bash
   rm -rf .git AGENTS.md CLAUDE.md  # adjust based on which exist
@@ -107,7 +107,7 @@ export default eslintConfig;
 
 3. **Write `.prettierrc`** with the type-imports-first sort plugin (see `node-ts.md`).
 
-4. **Run `npx prettier --write .` once after writing `.prettierrc`** to reformat `eslint.config.mjs` and any other files `create-next-app` left in non-prettier style. Otherwise CI's `format:check` will fail on first push, and the skill's smoke test in Step K would only catch it after several minutes of confusion.
+4. **Run `npx prettier --write .` once after writing `.prettierrc`** to reformat `eslint.config.mjs` and any other files `create-next-app` left in non-prettier style. Otherwise CI's `format:check` will fail on first push, and the skill's smoke test in Step 20 would only catch it after several minutes of confusion.
 
 5. **Set initial version to `0.0.0`** in `package.json` so release-please's first release PR cleanly bumps to `0.1.0`.
 

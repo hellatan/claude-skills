@@ -20,7 +20,7 @@
 pip install pre-commit  # or: uv add --dev pre-commit
 ```
 
-**Important: `pre-commit install` requires `.git/` to exist.** It writes the hook script to `.git/hooks/pre-commit`. If the skill is following Step D before Step F (git init), defer the `pre-commit install` call until after `git init`. Better: run `pre-commit install` as the *last* line of Step F.
+**Important: `pre-commit install` requires `.git/` to exist.** It writes the hook script to `.git/hooks/pre-commit`. If the skill is following Step 13 before Step 15 (git init), defer the `pre-commit install` call until after `git init`. Better: run `pre-commit install` as the *last* line of Step 15.
 
 ```bash
 # Run AFTER git init:
@@ -39,7 +39,7 @@ This bumps hook revisions to current versions before the user commits, so they d
 
 ## Config: Python-only
 
-`.pre-commit-config.yaml` (revs are current at scaffold time — `pre-commit autoupdate` runs automatically in Step F to bump them, and you can re-run it periodically):
+`.pre-commit-config.yaml` (revs are current at scaffold time — `pre-commit autoupdate` runs automatically in Step 15 to bump them, and you can re-run it periodically):
 
 ```yaml
 repos:

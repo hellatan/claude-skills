@@ -31,7 +31,7 @@ User says any of:
 
 ## Requires
 
-Both `/testing-init` and `/gh-actions-init` must be installed (Step E delegates to them). See `references/sister-skills-dependency.md`.
+Both `/testing-init` and `/gh-actions-init` must be installed (Step 14 delegates to them). See `references/sister-skills-dependency.md`.
 
 ---
 
@@ -39,11 +39,11 @@ Both `/testing-init` and `/gh-actions-init` must be installed (Step E delegates 
 
 Run these steps in order. **Ask questions one at a time.** For decision points where the skill has a strong default, state the default and only wait for an override.
 
-### 0. Verify sister skills are installed (fail fast)
+### 1. Verify sister skills are installed (fail fast)
 
-Before Step 1, confirm `/testing-init` and `/gh-actions-init` are in the available-skills list. If either is missing, abort with the message in `references/sister-skills-dependency.md` — don't ask the user any questions until the dependency is satisfied.
+Before Step 2, confirm `/testing-init` and `/gh-actions-init` are in the available-skills list. If either is missing, abort with the message in `references/sister-skills-dependency.md` — don't ask the user any questions until the dependency is satisfied.
 
-### 1. Project name + location
+### 2. Project name + location
 
 Ask:
 - Project name (becomes repo name and directory name)
@@ -57,7 +57,7 @@ Compute the **package name** here too: convert the project name to snake_case fo
 - `uvicorn <package>.main:app` references in CLAUDE.md
 - Test discovery paths
 
-### 2. Project type
+### 3. Project type
 
 Ask:
 
@@ -68,7 +68,7 @@ Ask:
 > - **library** — code meant to be reused by other projects (published as a package)
 > - **research** — exploratory work, notebooks, scripts — no app or website to deploy
 
-### 3. Framework selection (prescriptive)
+### 4. Framework selection (prescriptive)
 
 Apply the prescriptive-defaults pattern. Don't ask what they want — tell them what you're using.
 
@@ -101,7 +101,7 @@ For Node backend (when not collapsed into Next.js):
 >
 > If you specifically need a separate backend (e.g. you'll have multiple frontends, heavy background jobs, or websockets), say so now. Otherwise reply "ok" or hit enter.
 
-### 4. Layout decision (fullstack only)
+### 5. Layout decision (fullstack only)
 
 This decision depends on the backend language.
 
@@ -121,7 +121,7 @@ This decision depends on the backend language.
 
 (No alternative offered — workspaces literally can't help when one side is Python.)
 
-### 5. Staging branch
+### 6. Staging branch
 
 Ask:
 
@@ -132,7 +132,7 @@ Ask:
 > - `yes` — set up a `stage` branch with its own protected workflow (lifecycle becomes feature → develop → stage → main)
 > - `no` — go straight from develop → production (default)
 
-### 6. GitHub repo
+### 7. GitHub repo
 
 Ask:
 
@@ -152,13 +152,13 @@ If the user picked private and is on free tier, **warn now, not later**:
 
 > Heads up — your account is on the free tier, so branch protection won't apply to a private repo. The local pre-commit hooks and CLAUDE.md git rules still protect you, and CI still runs on PRs (you'll just *be able* to merge a failing PR if you ignore the red X). Want to make it public instead, or proceed?
 
-### 7. Show summary, halt for confirmation
+### 8. Show summary, halt for confirmation
 
 Render the plan as a fenced code block with emoji-prefixed group headers (not a markdown bullet section). Show only choices made for *this* user's project. End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
 
-See `references/step-7-summary-template.md` for the layout and rules.
+See `references/step-08-summary-template.md` for the layout and rules.
 
-### 8. **HALT — REAL CONFIRMATION GATE**
+### 9. **HALT — REAL CONFIRMATION GATE**
 
 This is its own dedicated step. **Do not proceed under any circumstances** until the user replies with explicit affirmative confirmation (e.g. "yes", "go", "proceed", "looks good", "ok").
 
@@ -172,7 +172,7 @@ If the user says anything other than affirmative confirmation, ask what they'd l
 
 Once confirmed, proceed through these steps without further halts (unless something fails).
 
-### Step A: Create directory + base files
+### 10. Create directory + base files
 
 `mkdir -p <parent>/<name>`, `cd` in. **For Next.js projects, run `create-next-app` FIRST with `--skip-git`** — see `references/configs/nextjs.md` for the exact flags and post-scaffold cleanup (delete the stub `CLAUDE.md`, keep `AGENTS.md`).
 
@@ -187,7 +187,7 @@ For fullstack: create `frontend/` and `backend/` subdirs. For Python: create `<p
 
 **After writing all configs, run `npx prettier --write .` once** so create-next-app's `eslint.config.mjs` and other unformatted files don't trip CI's `format:check` on first push.
 
-### Step B: Stack-specific config files
+### 11. Stack-specific config files
 
 All templates are in `references/configs/`. Pick by stack:
 
@@ -203,66 +203,66 @@ All templates are in `references/configs/`. Pick by stack:
 
 **Monorepo gotcha:** ESLint's flat config resolves from CWD. If `eslint.config.mjs` lives in `frontend/`, pre-commit hooks must `cd frontend` first. Handled by `/precommit-init`'s `references/precommit-config.md`.
 
-### Step C: Root-level command runner
+### 12. Root-level command runner
 
 So users can run lint/test/build from one place without Make (which isn't cross-platform). The canonical command is **`check:all`** — runs everything CI would run.
 
 - **Any project with Node:** root `package.json` with proxying scripts. See `references/configs/root-package-scripts.md` for the full template per stack.
 - **Python-only:** scaffold `scripts/dev.py` instead. See `references/configs/python-dev-script.md`.
 
-### Step D: Pre-commit hooks (single unified system at root)
+### 13. Pre-commit hooks (single unified system at root)
 
-Owned by `/precommit-init`. Install `pip install pre-commit` and write the per-stack `.pre-commit-config.yaml` from its `references/precommit-config.md` — but **stop before `pre-commit install`** in this flow because `.git/` doesn't exist yet (Step F handles activation after `git init`).
+Owned by `/precommit-init`. Install `pip install pre-commit` and write the per-stack `.pre-commit-config.yaml` from its `references/precommit-config.md` — but **stop before `pre-commit install`** in this flow because `.git/` doesn't exist yet (Step 15 handles activation after `git init`).
 
 The config dispatches by file pattern: staging only Python files runs only Python hooks, staging only TS files runs only TS hooks, mixing runs both. All from root.
 
-### Step E: Tests + GitHub Actions (delegate to sister skills)
+### 14. Tests + GitHub Actions (delegate to sister skills)
 
-Run `/testing-init`'s execution phase, then `/gh-actions-init`'s. Treat the stack as already-known and skip their detection + summary-halt gates (project-scaffold's Step 8 covered those).
+Run `/testing-init`'s execution phase, then `/gh-actions-init`'s. Treat the stack as already-known and skip their detection + summary-halt gates (project-scaffold's Step 9 covered those).
 
-See `references/step-E-delegate.md` for what each sister skill owns, the manifest-version invariant, and the full sub-skill protocol.
+See `references/step-14-delegate.md` for what each sister skill owns, the manifest-version invariant, and the full sub-skill protocol.
 
-### Step F: Git init with main + develop (+ optional stage)
+### 15. Git init with main + develop (+ optional stage)
 
-Initialize git, create `main` + `develop` (+ `stage` if opted in), check out `develop`, and activate pre-commit hooks (deferred from Step D since `pre-commit install` needs `.git/` to exist).
+Initialize git, create `main` + `develop` (+ `stage` if opted in), check out `develop`, and activate pre-commit hooks (deferred from Step 13 since `pre-commit install` needs `.git/` to exist).
 
-See `references/step-F-git-init.md` for the bash sequence.
+See `references/step-15-git-init.md` for the bash sequence.
 
-### Step G: Detect global pre-push hooks before pushing
+### 16. Detect global pre-push hooks before pushing
 
-Before Step H pushes to `main`/`develop`, check whether the user has a global pre-push hook that might block protected-branch pushes. If one exists, ask about override env var conventions before attempting the push — surfacing this *before* Step H keeps the bootstrap atomic.
+Before Step 17 pushes to `main`/`develop`, check whether the user has a global pre-push hook that might block protected-branch pushes. If one exists, ask about override env var conventions before attempting the push — surfacing this *before* Step 17 keeps the bootstrap atomic.
 
-See `references/step-G-prepush-hooks.md` for the detection commands and the verbatim warning message.
+See `references/step-16-prepush-hooks.md` for the detection commands and the verbatim warning message.
 
-### Step H: Create GitHub repo and push
+### 17. Create GitHub repo and push
 
-Create the remote with `gh repo create`, then push `main`, `develop`, and (if opted in) `stage` using the override env var Step G confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
+Create the remote with `gh repo create`, then push `main`, `develop`, and (if opted in) `stage` using the override env var Step 16 confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
 
-See `references/step-H-create-repo-push.md` for the bash sequence and the full bootstrap-exception contract.
+See `references/step-17-create-repo-push.md` for the bash sequence and the full bootstrap-exception contract.
 
-### Step I: Branch protection (skip if free-tier private)
+### 18. Branch protection (skip if free-tier private)
 
-Skip entirely if Step 6 showed free-tier + private repo. Otherwise apply protection to `main`, `develop`, and (if staging enabled) `stage`, requiring the CI status checks to pass.
+Skip entirely if Step 7 showed free-tier + private repo. Otherwise apply protection to `main`, `develop`, and (if staging enabled) `stage`, requiring the CI status checks to pass.
 
 Owned by `/gitflow-init`. See its `references/branch-protection.md` for the bash function and the 403-fallback message.
 
-### Step J: Set develop as default branch
+### 19. Set develop as default branch
 
 `gh repo edit --default-branch develop` — PRs default to merging into `develop`; `main` only gets touched by release-please's release PRs.
 
-Owned by `/gitflow-init` (Step C of its standalone flow).
+Owned by `/gitflow-init` (Step 7 of its standalone flow).
 
-### Step K: Smoke test (verify the scaffold actually works)
+### 20. Smoke test (verify the scaffold actually works)
 
 Before declaring success, run the full smoke sequence from the project root: install deps → lint → typecheck → `pre-commit run --all-files` → test → build → `check:all`. **Don't use empty commits** — invoke hooks directly so there's no commit cleanup needed.
 
-If any step fails, report the specific failure and offer to fix. See `references/step-K-smoke-test.md` for the full bash sequence and common failure modes.
+If any step fails, report the specific failure and offer to fix. See `references/step-20-smoke-test.md` for the full bash sequence and common failure modes.
 
-### Step L: Report back
+### 21. Report back
 
 Print a status block (local path, GitHub URL, current branch, files created, branch protection status, smoke test results) followed by the verbatim "Next steps" + "Useful commands" block.
 
-See `references/step-L-report-template.md` for the exact template.
+See `references/step-21-report-template.md` for the exact template.
 
 ---
 
@@ -297,15 +297,15 @@ This is what the scaffold enables out of the box:
 
 ### Owned by this skill
 
-- `references/sister-skills-dependency.md` — what Step 0 checks for and why
-- `references/step-E-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
-- `references/step-F-git-init.md` — git init + branch creation + pre-commit activation sequence
-- `references/step-G-prepush-hooks.md` — global pre-push hook detection + warning message
-- `references/step-H-create-repo-push.md` — `gh repo create` + bootstrap push sequence + bootstrap-exception contract
+- `references/sister-skills-dependency.md` — what Step 1 checks for and why
+- `references/step-14-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
+- `references/step-15-git-init.md` — git init + branch creation + pre-commit activation sequence
+- `references/step-16-prepush-hooks.md` — global pre-push hook detection + warning message
+- `references/step-17-create-repo-push.md` — `gh repo create` + bootstrap push sequence + bootstrap-exception contract
 - `references/gitignores.md` — `.gitignore` per stack
-- `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
-- `references/step-K-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
-- `references/step-L-report-template.md` — verbatim final report + "Next steps" block
+- `references/step-08-summary-template.md` — emoji-grouped pre-execution summary
+- `references/step-20-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
+- `references/step-21-report-template.md` — verbatim final report + "Next steps" block
 - `references/configs/` — per-stack bootstrap config templates
   - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
   - `root-package-scripts.md`, `python-dev-script.md`
@@ -313,11 +313,11 @@ This is what the scaffold enables out of the box:
 
 ### Owned by sister skills
 
-- **`/testing-init`** (Step E) — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
-- **`/gh-actions-init`** (Step E) — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
-- **`/gitflow-init`** (Steps I + J) — branch protection + default-branch setting (+ develop/stage creation for retrofit). Templates: `skills/gitflow-init/references/branch-protection.md`.
-- **`/precommit-init`** (Step D) — pre-commit at root, polyglot (Python / Node / fullstack). Templates: `skills/precommit-init/references/precommit-config.md`.
-- **`/claude-md-init`** (Step A) — per-stack CLAUDE.md templates. Templates: `skills/claude-md-init/references/templates.md`.
+- **`/testing-init`** (Step 14) — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
+- **`/gh-actions-init`** (Step 14) — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
+- **`/gitflow-init`** (Steps 18 + 19) — branch protection + default-branch setting (+ develop/stage creation for retrofit). Templates: `skills/gitflow-init/references/branch-protection.md`.
+- **`/precommit-init`** (Step 13) — pre-commit at root, polyglot (Python / Node / fullstack). Templates: `skills/precommit-init/references/precommit-config.md`.
+- **`/claude-md-init`** (Step 10) — per-stack CLAUDE.md templates. Templates: `skills/claude-md-init/references/templates.md`.
 
 ## When NOT to use this skill
 

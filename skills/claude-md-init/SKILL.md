@@ -18,7 +18,7 @@ User says any of:
 ## When NOT to use
 
 - Repo already has a CLAUDE.md and the user wants to *edit* it — open the file directly, don't run this skill.
-- Brand-new project — `project-scaffold` calls this skill internally for Step A.
+- Brand-new project — `project-scaffold` calls this skill internally for Step 10.
 
 ## What this skill does NOT include
 
@@ -105,7 +105,7 @@ Same gate as other skills.
 
 ## Execution
 
-### Step A: Backup existing file (only if user picked overwrite)
+### 6. Backup existing file (only if user picked overwrite)
 
 ```bash
 [[ -f CLAUDE.md ]] && cp CLAUDE.md CLAUDE.md.bak
@@ -113,7 +113,7 @@ Same gate as other skills.
 
 Add `CLAUDE.md.bak` to `.gitignore` if not already ignored.
 
-### Step B: Write CLAUDE.md from the template
+### 7. Write CLAUDE.md from the template
 
 See `references/templates.md` for the per-stack template. Substitute:
 
@@ -122,7 +122,7 @@ See `references/templates.md` for the per-stack template. Substitute:
 - `<package_name>` (Python) — snake_case version of the project name.
 - Project-specific paths — adjust `src/app/api/` etc. to match the actual layout if it differs.
 
-### Step C: Verify length
+### 8. Verify length
 
 Re-read the written file and count lines. **Target: 50–120 lines.** If significantly outside that range:
 - Under 50 lines → likely missing template sections; double-check the template was applied fully.
@@ -130,7 +130,7 @@ Re-read the written file and count lines. **Target: 50–120 lines.** If signifi
 
 Don't auto-trim. Surface to the user.
 
-### Step D: Report back
+### 9. Report back
 
 - ✅ Template used
 - ✅ File written (line count)

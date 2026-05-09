@@ -1,4 +1,4 @@
-# Step L — Final report template
+# Step 21 — Final report template
 
 Show the user a verbatim summary plus a "next steps" block. Use this template:
 
