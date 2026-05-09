@@ -70,7 +70,7 @@ If they don't exist: scaffold all three. Manifest version must match `package.js
 
 If it exists: skip with a "you already have a deploy workflow" note.
 
-If it doesn't: scaffold the stub. Default-highlight Render.com (no vendor lock, fair pricing). Other platforms are commented out as alternatives. User fills in the actual deploy step.
+If it doesn't: scaffold the stub. The stub lists Render, Vercel, Fly.io, Railway, GHCR, and SSH/rsync as commented alternatives, all on equal footing (each needs user-supplied credentials), with a "How to use this file" header that walks the user through picking a target and adding the secrets it needs.
 
 ### 3. Show summary, halt for confirmation
 
@@ -128,7 +128,7 @@ Skill behavior:
 
 See `references/deploy-stub.md`.
 
-One file: `.github/workflows/deploy.yml`. Triggers on `v*.*.*` tag pushes (release-please creates these on release-PR merge). Render is highlighted as the default; other options (Fly.io, Railway, GHCR Docker push) are commented out.
+One file: `.github/workflows/deploy.yml`. Triggers on `v*.*.*` tag pushes (release-please creates these on release-PR merge). Render, Vercel, Fly.io, Railway, GHCR, and SSH/rsync are all listed as commented alternatives with a "How to use this file" header explaining how to pick one and wire up its secrets.
 
 ### Step D: Smoke-validate
 
@@ -151,7 +151,7 @@ Print:
 ```
 Next steps:
 1. Push a feature branch and open a PR — confirm CI runs green
-2. Fill in the deploy step in `.github/workflows/deploy.yml` (Render is highlighted as the default)
+2. Pick a deploy target in `.github/workflows/deploy.yml` and follow the "How to use this file" header inside it to wire up secrets
 3. (If you don't have tests yet) Run `/testing-init` to add the test jobs that round out the 5-check pipeline
 4. (If you want branch protection on main/develop) Set it up via GitHub UI or `gh api repos/{owner}/{repo}/branches/{branch}/protection`
 5. Make your first conventional commit (`feat:`, `fix:`, etc.) — release-please tracks these for the next release PR
@@ -164,11 +164,11 @@ Next steps:
 - `references/detection.md` — how to read stack + existing workflows + version state + branch model
 - `references/ci-structure.md` — per-stack lint + typecheck + format:check + build jobs; extend-vs-create logic
 - `references/release-please.md` — workflow, config, manifest; monorepo variant; tag-pattern gotchas
-- `references/deploy-stub.md` — `deploy.yml` with Render highlighted; other platforms commented
+- `references/deploy-stub.md` — `deploy.yml` with the deploy-target picker, secret-setup guidance, and platform examples (Render, Vercel, Fly, Railway, GHCR, SSH/rsync)
 
 ## Why these defaults
 
-- **Render.com over Vercel as the deploy default** — no vendor lock, fair pricing, runs on Docker/native, doesn't push the Next.js team's hosting agenda. Vercel is still listed (commented) for users who want it.
+- **Deploy stub is platform-neutral.** All targets are commented snippets with the same structure — none is wired in by default, since each requires user-supplied credentials and decisions. The stub includes a "How to use this file" header that walks the user through picking a target, fetching credentials, and adding secrets to GitHub Environments.
 - **release-please over manual versioning** — drives off conventional commits, opens PRs you review, no manual tag/changelog work.
 - **No build job for Python** — Python apps generally deploy source via container or buildpack; a separate `build` step adds CI time without value. Library projects can opt in by extending the workflow.
 - **Idempotent on re-run** — skips files that exist, extends `ci.yml` jobs without duplicating, surfaces what was skipped.
