@@ -181,7 +181,7 @@ Write to repo root:
 - `.gitignore` — see `references/gitignores.md`
 - `README.md` — minimal: `# <project-name>` + one-line description placeholder
 - `.editorconfig` — see `references/configs/editorconfig.md`
-- `.pre-commit-config.yaml` — see `references/configs/precommit-unified.md`
+- `.pre-commit-config.yaml` — owned by `/precommit-init`; see its `references/precommit-config.md`
 
 For fullstack: create `frontend/` and `backend/` subdirs. For Python: create `<package_name>/__init__.py` and (if FastAPI) `<package_name>/main.py` — see `references/configs/python-fastapi.md`. For TS without Next.js: stub `src/index.ts` (Node) or `src/main.tsx` (Vite) so `tsc --noEmit` has something to check.
 
@@ -201,7 +201,7 @@ All templates are in `references/configs/`. Pick by stack:
 
 **Install framework deps for real** — don't reference a tool in scripts without `npm install` / `pip install` first. Each reference doc lists its install commands.
 
-**Monorepo gotcha:** ESLint's flat config resolves from CWD. If `eslint.config.mjs` lives in `frontend/`, pre-commit hooks must `cd frontend` first. Handled by `configs/precommit-unified.md`.
+**Monorepo gotcha:** ESLint's flat config resolves from CWD. If `eslint.config.mjs` lives in `frontend/`, pre-commit hooks must `cd frontend` first. Handled by `/precommit-init`'s `references/precommit-config.md`.
 
 ### Step C: Root-level command runner
 
@@ -212,11 +212,9 @@ So users can run lint/test/build from one place without Make (which isn't cross-
 
 ### Step D: Pre-commit hooks (single unified system at root)
 
-**Default to `pre-commit` for everything** — drop husky. Install: `pip install pre-commit` (or `uv add --dev pre-commit`). Generate `.pre-commit-config.yaml` at repo root per stack — see `references/configs/precommit-unified.md`.
+Owned by `/precommit-init`. Install `pip install pre-commit` and write the per-stack `.pre-commit-config.yaml` from its `references/precommit-config.md` — but **stop before `pre-commit install`** in this flow because `.git/` doesn't exist yet (Step F handles activation after `git init`).
 
 The config dispatches by file pattern: staging only Python files runs only Python hooks, staging only TS files runs only TS hooks, mixing runs both. All from root.
-
-**Do NOT run `pre-commit install` yet** — it requires `.git/`. Step F handles activation after `git init`.
 
 ### Step E: Tests + GitHub Actions (delegate to sister skills)
 
@@ -311,7 +309,7 @@ This is what the scaffold enables out of the box:
 - `references/step-L-report-template.md` — verbatim final report + "Next steps" block
 - `references/configs/` — per-stack bootstrap config templates
   - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
-  - `precommit-unified.md`, `root-package-scripts.md`, `python-dev-script.md`
+  - `root-package-scripts.md`, `python-dev-script.md`
 - `references/explainers/concepts.md` — plain-English concept explainers
 
 ### Owned by sister skills
@@ -319,6 +317,7 @@ This is what the scaffold enables out of the box:
 - **`/testing-init`** (Step E) — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
 - **`/gh-actions-init`** (Step E) — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
 - **`/gitflow-init`** (Steps I + J) — branch protection + default-branch setting (+ develop/stage creation for retrofit). Templates: `skills/gitflow-init/references/branch-protection.md`.
+- **`/precommit-init`** (Step D) — pre-commit at root, polyglot (Python / Node / fullstack). Templates: `skills/precommit-init/references/precommit-config.md`.
 
 ## When NOT to use this skill
 
