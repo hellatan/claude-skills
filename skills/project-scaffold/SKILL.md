@@ -249,22 +249,9 @@ Wait for confirmation before pushing.
 
 ### Step H: Create GitHub repo and push
 
-```bash
-gh repo create <name> --private --source=. --remote=origin
+Create the remote with `gh repo create`, then push `main`, `develop`, and (if opted in) `stage` using the override env var Step G confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
 
-# Bootstrap push — exception: this is the ONLY time pushing directly to
-# protected branches is authorized. After this, all changes go through PRs.
-ALLOW_PUSH_TO_PROTECTED=1 git push -u origin main
-ALLOW_PUSH_TO_PROTECTED=1 git push -u origin develop
-
-if staging_enabled:
-  ALLOW_PUSH_TO_PROTECTED=1 git push -u origin stage
-```
-
-**The bootstrap exception is push-only, scoped to seeding the remote.** After this point:
-- All changes (including dep installs, fixups, follow-up commits) go through the standard PR → develop flow
-- Branch protection bypass is **never** authorized for merging PRs
-- The skill must not extend the bootstrap exception to any subsequent operation
+See `references/step-H-create-repo-push.md` for the bash sequence and the full bootstrap-exception contract.
 
 ### Step I: Branch protection (skip if free-tier private)
 
@@ -328,6 +315,7 @@ This is what the scaffold enables out of the box:
 - `references/sister-skills-dependency.md` — what Step 0 checks for and why
 - `references/step-E-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
 - `references/step-F-git-init.md` — git init + branch creation + pre-commit activation sequence
+- `references/step-H-create-repo-push.md` — `gh repo create` + bootstrap push sequence + bootstrap-exception contract
 - `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
