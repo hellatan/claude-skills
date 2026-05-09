@@ -21,8 +21,8 @@ For each scope the user chose, add the matching job *if it doesn't already exist
     name: unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4   # for Node projects
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6   # for Node projects
         with:
           node-version: 22
           cache: npm
@@ -36,8 +36,8 @@ For Python:
     name: unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: pip install -e ".[dev]"
@@ -51,8 +51,8 @@ For Python:
     name: integration tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -69,8 +69,8 @@ Python equivalent: `pytest -m integration`.
     name: e2e tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
