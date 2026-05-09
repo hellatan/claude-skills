@@ -29,11 +29,19 @@ User says any of:
 - "init a new repo"
 - "new project with claude config"
 
+## Requires
+
+Both `/testing-init` and `/gh-actions-init` must be installed (Step E delegates to them). See `references/sister-skills-dependency.md`.
+
 ---
 
 ## Flow
 
 Run these steps in order. **Ask questions one at a time.** For decision points where the skill has a strong default, state the default and only wait for an override.
+
+### 0. Verify sister skills are installed (fail fast)
+
+Before Step 1, confirm `/testing-init` and `/gh-actions-init` are in the available-skills list. If either is missing, abort with the message in `references/sister-skills-dependency.md` — don't ask the user any questions until the dependency is satisfied.
 
 ### 1. Project name + location
 
@@ -210,17 +218,11 @@ The config dispatches by file pattern: staging only Python files runs only Pytho
 
 **Do NOT run `pre-commit install` yet** — it requires `.git/`. Step F handles activation after `git init`.
 
-### Step E: GitHub Actions workflows
+### Step E: Tests + GitHub Actions (delegate to sister skills)
 
-Write to `.github/workflows/`:
+Run `/testing-init`'s execution phase, then `/gh-actions-init`'s. Treat the stack as already-known and skip their detection + summary-halt gates (project-scaffold's Step 8 covered those).
 
-1. **`ci.yml`** — 5-check pipeline. Pick the variant from `references/workflows/`: `ci-node.md`, `ci-python.md`, `ci-fullstack-py-ts.md`, or `ci-fullstack-node-ts.md`.
-2. **`release-please.yml`** — see `references/workflows/release-please.md`.
-3. **`deploy.yml`** — platform-agnostic stub. See `references/workflows/deploy.md`.
-
-Also write `.github/release-please-config.json` and `.github/.release-please-manifest.json` — both at `0.0.0` along with `package.json` / `pyproject.toml` `version` (release-please's first PR then bumps to `0.1.0`).
-
-**Scaffold passing test stubs + install runners** so CI doesn't fail on first push — see `references/step-E-test-stubs.md`.
+See `references/step-E-delegate.md` for what each sister skill owns, the manifest-version invariant, and the full sub-skill protocol.
 
 ### Step F: Git init with main + develop (+ optional stage)
 
@@ -343,20 +345,25 @@ This is what the scaffold enables out of the box:
 
 ## Reference files
 
+### Owned by this skill
+
+- `references/sister-skills-dependency.md` — what Step 0 checks for and why
+- `references/step-E-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
 - `references/claude-md-templates.md` — CLAUDE.md per stack
 - `references/gitignores.md` — `.gitignore` per stack
 - `references/step-7-summary-template.md` — emoji-grouped pre-execution summary
-- `references/step-E-test-stubs.md` — passing test-stub recipes per stack
 - `references/step-I-branch-protection.md` — `gh api` protection script + 403 fallback
 - `references/step-K-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
 - `references/step-L-report-template.md` — verbatim final report + "Next steps" block
-- `references/configs/` — per-stack config templates
+- `references/configs/` — per-stack bootstrap config templates
   - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
   - `precommit-unified.md`, `root-package-scripts.md`, `python-dev-script.md`
-- `references/workflows/` — GitHub Actions workflow templates
-  - `ci-node.md`, `ci-python.md`, `ci-fullstack-py-ts.md`, `ci-fullstack-node-ts.md`
-  - `release-please.md`, `deploy.md`
 - `references/explainers/concepts.md` — plain-English concept explainers
+
+### Owned by sister skills (Step E delegates here)
+
+- **`/testing-init`** — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
+- **`/gh-actions-init`** — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
 
 ## When NOT to use this skill
 
