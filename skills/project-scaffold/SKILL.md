@@ -224,7 +224,7 @@ See `references/step-14-delegate.md` for what each sister skill owns, the manife
 
 ### 15. Git init with main + develop (+ optional stage)
 
-Initialize git, create `main` + `develop` (+ `stage` if opted in), check out `develop`, and activate pre-commit hooks (deferred from Step 13 since `pre-commit install` needs `.git/` to exist).
+Initialize git, activate pre-commit hooks (deferred from Step 13 since `pre-commit install` needs `.git/` to exist), apply auto-fixers to the working tree, then commit so the initial commit lands clean. Without the pre-commit pass, every scaffold ships with a no-op fixup PR for trailing newlines and prettier nits — generators like `create-next-app` produce files that don't satisfy the hooks, and the bootstrap-exception contract (Step 17) prevents pushing those fixes directly to `develop`. Create `main` + `develop` (+ `stage` if opted in) and check out `develop`.
 
 See `references/step-15-git-init.md` for the bash sequence.
 
