@@ -4,6 +4,16 @@ Pick the template that matches the project type/stack. All templates inherit the
 
 Aim for 50–120 lines total.
 
+## Workflow-rule reference (every template)
+
+When the project ships with `.claude/rules/git-workflow.md` (which `/project-scaffold` Step 10 writes by default), include this line near the top of the CLAUDE.md, right under the project description:
+
+```markdown
+@.claude/rules/git-workflow.md
+```
+
+The `@<path>` directive tells Claude sessions to load the referenced file as additional context, so the per-repo workflow rules apply automatically without depending on the user's global agent memory. Skip this line when retrofitting a CLAUDE.md into a repo that doesn't already have the workflow rule file.
+
 ---
 
 ## Universal preamble (always include)
@@ -12,6 +22,8 @@ Aim for 50–120 lines total.
 # <PROJECT_NAME>
 
 <One-line description of what this repo is and what stack.>
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 
@@ -44,6 +56,8 @@ Run from the repo root:
 # <PROJECT_NAME>
 
 <One-liner: e.g., "Trading dashboard. Next.js 15 + TypeScript.">
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 
@@ -84,6 +98,8 @@ Run from the repo root:
 
 <One-liner: e.g., "Charting API. FastAPI + pandas. Python 3.12.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
 - Feature branches off `develop`, never `main`.
@@ -121,6 +137,8 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 # <PROJECT_NAME>
 
 <One-liner: e.g., "Order execution service. Fastify + TypeScript.">
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 
@@ -163,6 +181,8 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 <One-liner: e.g., "Trading dashboard. Next.js frontend + FastAPI Python backend.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
 - Feature branches off `develop`. PRs target `develop`. CI runs all 5 checks across both sides.
@@ -198,6 +218,8 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 # <PROJECT_NAME>
 
 <One-liner: e.g., "Trading platform. Next.js frontend + Fastify backend, npm workspaces.">
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 
@@ -243,6 +265,8 @@ Use the matching backend template above as a starting point and:
 # <PROJECT_NAME>
 
 <One-liner: e.g., "Exploratory backtest research for MNQ breakout strategies.">
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 
