@@ -119,7 +119,7 @@ export default eslintConfig;
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
@@ -131,6 +131,8 @@ export default eslintConfig;
   }
 }
 ```
+
+**Note on `"lint"`:** Use `eslint`, not `next lint`. The `next lint` command was deprecated in Next.js 15 and **removed in Next.js 16** (the version `create-next-app` installs by default now). The ESLint flat config that Next.js scaffolds (`eslint.config.mjs`) already extends `next/core-web-vitals` + `next/typescript`, so running `eslint` directly applies all the same rules with no functional loss. `create-next-app` itself generates `"lint": "eslint"` in its scripts as of Next 16 — overriding with `"next lint"` would re-introduce a broken script.
 
 7. **Scaffold smoke-test stubs** so CI doesn't fail on first push:
 
