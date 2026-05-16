@@ -177,11 +177,12 @@ Once confirmed, proceed through these steps without further halts (unless someth
 `mkdir -p <parent>/<name>`, `cd` in. **For Next.js projects, run `create-next-app` FIRST with `--skip-git`** — see `references/configs/nextjs.md` for the exact flags and post-scaffold cleanup (delete the stub `CLAUDE.md`, keep `AGENTS.md`).
 
 Write to repo root:
-- `CLAUDE.md` — owned by `/claude-md-init`; see its `references/templates.md`
+- `CLAUDE.md` — owned by `/claude-md-init`; see its `references/templates.md`. The template includes an `@.claude/rules/git-workflow.md` reference so any Claude session on the project loads the workflow rules automatically.
 - `.gitignore` — see `references/gitignores.md`
 - `README.md` — minimal: `# <project-name>` + one-line description placeholder
 - `.editorconfig` — see `references/configs/editorconfig.md`
 - `.pre-commit-config.yaml` — owned by `/precommit-init`; see its `references/precommit-config.md`
+- `.claude/rules/git-workflow.md` — per-repo workflow rules (worktree usage, branch off `develop`, refspec push pattern, draft PRs, release-please flow). Verbatim copy of the template content in `references/configs/git-workflow-rule.md`. The whole skill assumes this workflow; scaffolding the rule into the repo makes it discoverable to anyone (or any Claude session) working on the project later, without requiring global agent memory.
 
 For fullstack: create `frontend/` and `backend/` subdirs. For Python: create `<package_name>/__init__.py` and (if FastAPI) `<package_name>/main.py` — see `references/configs/python-fastapi.md`. For TS without Next.js: stub `src/index.ts` (Node) or `src/main.tsx` (Vite) so `tsc --noEmit` has something to check.
 
@@ -309,6 +310,7 @@ This is what the scaffold enables out of the box:
 - `references/configs/` — per-stack bootstrap config templates
   - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
   - `root-package-scripts.md`, `python-dev-script.md`
+  - `git-workflow-rule.md` — template for the per-repo `.claude/rules/git-workflow.md` Step 10 scaffolds
 - `references/explainers/concepts.md` — plain-English concept explainers
 
 ### Owned by sister skills
