@@ -63,7 +63,7 @@ Run from the repo root:
 
 - Feature branches off `develop`, never `main`.
 - Pre-commit runs ESLint + Prettier on staged files. Don't bypass with `--no-verify`.
-- PRs target `develop`. CI runs all 5 checks (lint+typecheck, unit, integration, e2e, build).
+- PRs target `develop`. CI runs the full check suite (lint+typecheck, format:check, unit, e2e, build — plus integration if opted in).
 - Releases: merge `develop` → `main` → release-please PR → tag → deploy.
 
 ## Project map
@@ -104,7 +104,7 @@ Run from the repo root:
 
 - Feature branches off `develop`, never `main`.
 - Pre-commit runs ruff (lint + format) and mypy on staged files.
-- PRs target `develop`. CI runs all 5 checks.
+- PRs target `develop`. CI runs the full check suite.
 - Releases via release-please.
 
 ## Project map
@@ -144,7 +144,7 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 - Feature branches off `develop`, never `main`.
 - Pre-commit runs ESLint + Prettier on staged files.
-- PRs target `develop`. CI runs all 5 checks.
+- PRs target `develop`. CI runs the full check suite.
 - Releases via release-please.
 
 ## Project map
@@ -185,7 +185,7 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 ## Lifecycle
 
-- Feature branches off `develop`. PRs target `develop`. CI runs all 5 checks across both sides.
+- Feature branches off `develop`. PRs target `develop`. CI runs the full check suite across both sides.
 - Pre-commit at repo root runs the right hooks based on which files you've staged (Python files → ruff + mypy; TS files → ESLint + Prettier).
 - Releases via release-please.
 
@@ -223,7 +223,7 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 ## Lifecycle
 
-- Feature branches off `develop`. PRs target `develop`. CI runs all 5 checks.
+- Feature branches off `develop`. PRs target `develop`. CI runs the full check suite.
 - Pre-commit at repo root.
 - Releases via release-please.
 
