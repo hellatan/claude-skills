@@ -225,21 +225,34 @@ See `references/step-14-delegate.md` for what each sister skill owns, the manife
 
 ### 15. Git init with main + develop (+ optional stage)
 
-Initialize git, activate pre-commit hooks (deferred from Step 13 since `pre-commit install` needs `.git/` to exist), apply auto-fixers to the working tree, then commit so the initial commit lands clean. Without the pre-commit pass, every scaffold ships with a no-op fixup PR for trailing newlines and prettier nits — generators like `create-next-app` produce files that don't satisfy the hooks, and the bootstrap-exception contract (Step 17) prevents pushing those fixes directly to `develop`. Create `main` + `develop` (+ `stage` if opted in) and check out `develop`.
+Initialize git, **verify the release-please manifest invariant** (`package.json` / `pyproject.toml` / `.release-please-manifest.json` all read `0.0.0` — abort if any differ), activate pre-commit hooks (deferred from Step 13 since `pre-commit install` needs `.git/` to exist), apply auto-fixers to the working tree, then commit so the initial commit lands clean. Without the pre-commit pass, every scaffold ships with a no-op fixup PR for trailing newlines and prettier nits — generators like `create-next-app` produce files that don't satisfy the hooks, and the bootstrap-exception contract (Step 17) prevents pushing those fixes directly to `develop`. The version check catches missed resets in 5 seconds rather than at the first release attempt. Create `main` + `develop` (+ `stage` if opted in) and check out `develop`.
 
-See `references/step-15-git-init.md` for the bash sequence.
+See `references/step-15-git-init.md` for the bash sequence and the version-invariant check.
 
-### 16. Detect global pre-push hooks before pushing
+### 16. Detect pre-push protection before pushing
 
-Before Step 17 pushes to `main`/`develop`, check whether the user has a global pre-push hook that might block protected-branch pushes. If one exists, ask about override env var conventions before attempting the push — surfacing this *before* Step 17 keeps the bootstrap atomic.
+Before Step 17 pushes to `main`/`develop`, check whether anything will block direct pushes to protected branches. Check **all four** common sources, not just `core.hooksPath`:
+
+1. `git config --global core.hooksPath` (git's own hook directory)
+2. Claude harness hooks at `~/.claude/hooks/*.{py,sh}` (these run *before* git sees the push)
+3. Shell aliases/functions shadowing `git`
+4. `git config --global init.templateDir` (template applied to fresh `git init`)
+
+If any source produces a hit, surface the verbatim warning that frames this as the skill's **documented bootstrap exception** (not a violation of the user's global rules) and ask about override env var conventions before attempting the push. Surfacing this *before* Step 17 keeps the bootstrap atomic.
 
 See `references/step-16-prepush-hooks.md` for the detection commands and the verbatim warning message.
 
-### 17. Create GitHub repo and push
+### 17. Create GitHub repo and push (bracketed by auto-mode halts)
 
 Create the remote with `gh repo create`, then push `main`, `develop`, and (if opted in) `stage` using the override env var Step 16 confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
 
-See `references/step-17-create-repo-push.md` for the bash sequence and the full bootstrap-exception contract.
+The push is bracketed by two **real halts** (not text-only notes — text mid-flow gets skipped past):
+
+- **17a — PRE-PUSH GATE.** Surface a verbatim message telling the user that Claude Code's auto-mode classifier will block the bootstrap push without surfacing an approval dialog, and to toggle auto-mode OFF before replying `go`.
+- **17b — Push.** Run the `gh repo create` + `git push` sequence.
+- **17c — POST-PUSH GATE.** Surface a verbatim message that the bootstrap exception is done and the user can toggle auto-mode back ON. Wait for `continue` before proceeding to Step 18.
+
+See `references/step-17-create-repo-push.md` for the bash sequence, the verbatim gate messages, and the full bootstrap-exception contract.
 
 ### 18. Branch protection (skip if free-tier private)
 

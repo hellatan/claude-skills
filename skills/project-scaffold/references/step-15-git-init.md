@@ -7,6 +7,19 @@ Initialize the git repo, activate pre-commit hooks (deferred from Step 13, since
 ```bash
 git init -b main
 
+# Verify the release-please manifest invariant BEFORE the initial commit.
+# package.json version, pyproject.toml version, and
+# .github/.release-please-manifest.json must all read 0.0.0. If any differ,
+# release-please's first PR opens with a confusing "no changes since X" diff.
+if [[ -f package.json ]]; then
+  node -e "process.exit(require('./package.json').version === '0.0.0' ? 0 : 1)" \
+    || { echo "ABORT: package.json version must be 0.0.0 before initial commit (see references/configs/nextjs.md)"; exit 1; }
+fi
+if [[ -f .github/.release-please-manifest.json ]]; then
+  grep -q '"0.0.0"' .github/.release-please-manifest.json \
+    || { echo "ABORT: .release-please-manifest.json must read 0.0.0 before initial commit"; exit 1; }
+fi
+
 # Activate hooks BEFORE the initial commit so the initial commit lands clean.
 pre-commit install
 pre-commit autoupdate
@@ -49,6 +62,12 @@ The naive order (commit first, install hooks after) bakes a trivial fixup PR int
 4. Per the bootstrap-exception contract (Step 17), the only way to land them is via a feature branch + PR.
 
 That PR adds nothing of value and is friction for every new project. Running the auto-fixers *before* the initial commit eliminates it.
+
+## Why the version check exists
+
+`create-next-app` (and similar generators) initialize `package.json` with `"version": "0.1.0"`. The skill's framework-config step (Step 11 / `references/configs/nextjs.md`) instructs resetting it to `0.0.0`, but it's easy to miss when skimming a long bullet list. If `package.json` ships at `0.1.0` while `.release-please-manifest.json` is at `0.0.0`, release-please's very first PR generates a "no changes since 0.1.0" diff that confuses the project's release history before any code has shipped.
+
+Catching the mismatch *before* the initial commit means a missed reset surfaces in 5 seconds, not after the first attempt to cut a release.
 
 ## Caveats
 
