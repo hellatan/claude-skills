@@ -61,6 +61,19 @@ rm -rf frontend/.git frontend/CLAUDE.md
 # Keep frontend/AGENTS.md — it's useful Next-specific context
 ```
 
+## REQUIRED: reset `package.json` version to `0.0.0`
+
+`create-next-app` writes `"version": "0.1.0"` to `package.json`. Reset it to **`0.0.0`** before the initial commit:
+
+```bash
+# Replace the version field (use Edit / sed / jq — any approach works):
+node -e "const p=require('./package.json'); p.version='0.0.0'; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2)+'\n')"
+```
+
+**Why this matters:** release-please's manifest invariant (see `references/step-14-delegate.md`) requires `package.json` version == `.release-please-manifest.json` version == `0.0.0` at scaffold time. The first release-please PR then cleanly bumps to `0.1.0` driven by the first `feat:` commit. If `package.json` is left at `0.1.0` and the manifest at `0.0.0`, release-please's first PR opens with a confusing "no changes since 0.1.0" diff — the project's "history" lies about what shipped.
+
+Step 15 verifies this invariant before the initial commit and aborts if it's wrong, so a missed reset surfaces immediately rather than after the first release attempt.
+
 ## Post-scaffold customizations
 
 After `create-next-app` runs, the skill should:
@@ -109,9 +122,7 @@ export default eslintConfig;
 
 4. **Run `npx prettier --write .` once after writing `.prettierrc`** to reformat `eslint.config.mjs` and any other files `create-next-app` left in non-prettier style. Otherwise CI's `format:check` will fail on first push, and the skill's smoke test in Step 20 would only catch it after several minutes of confusion.
 
-5. **Set initial version to `0.0.0`** in `package.json` so release-please's first release PR cleanly bumps to `0.1.0`.
-
-6. **Add scripts** for the canonical commands:
+5. **Add scripts** for the canonical commands:
 
 ```json
 {
@@ -134,7 +145,7 @@ export default eslintConfig;
 
 **Note on `"lint"`:** Use `eslint`, not `next lint`. The `next lint` command was deprecated in Next.js 15 and **removed in Next.js 16** (the version `create-next-app` installs by default now). The ESLint flat config that Next.js scaffolds (`eslint.config.mjs`) already extends `next/core-web-vitals` + `next/typescript`, so running `eslint` directly applies all the same rules with no functional loss. `create-next-app` itself generates `"lint": "eslint"` in its scripts as of Next 16 — overriding with `"next lint"` would re-introduce a broken script.
 
-7. **Scaffold smoke-test stubs** so CI doesn't fail on first push:
+6. **Scaffold smoke-test stubs** so CI doesn't fail on first push:
 
 `src/__tests__/smoke.test.ts`:
 ```typescript
@@ -174,7 +185,7 @@ export default defineConfig({
 });
 ```
 
-8. **Vitest config** (`vitest.config.ts`):
+7. **Vitest config** (`vitest.config.ts`):
 ```typescript
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
