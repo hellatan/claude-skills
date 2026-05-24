@@ -1,0 +1,11 @@
+{
+  "name": "ht-skills",
+  "description": "Utility skills for project scaffolding, CI/CD setup, testing pipelines, pre-commit hooks, git workflows, and CLAUDE.md generation.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Dale Tan"
+  },
+  "homepage": "https://github.com/hellatan/claude-skills",
+  "repository": "https://github.com/hellatan/claude-skills",
+  "license": "MIT"
+}
