@@ -74,29 +74,41 @@ This exact shape was verified end-to-end on a throwaway repo: a real `feat` comm
 
 ## Config — fullstack monorepo (frontend + backend)
 
+A monorepo tracks each package's version independently, so its tags must be **per-component** (`backend-v1.2.0`, `frontend-v1.2.0`) and each package needs its **own** release PR. This exact shape was verified end-to-end (see the note at the end of this section):
+
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "separate-pull-requests": true,
   "packages": {
     "backend": {
       "release-type": "python",
-      "package-name": "<project>-backend"
+      "package-name": "<project>-backend",
+      "component": "backend"
     },
     "frontend": {
       "release-type": "node",
-      "package-name": "<project>-frontend"
+      "component": "frontend"
     }
   },
   "include-v-in-tag": true,
-  "include-component-in-tag": false,
-  "separate-pull-requests": false
+  "pull-request-title-pattern": "chore: release ${component} ${version}"
 }
 ```
 
-**Important: `include-component-in-tag: false` matters.** Without it, release-please produces tags like `frontend-v1.2.0` and `backend-v1.2.0`, which don't match `deploy.yml`'s default `v*.*.*` trigger pattern. With it, frontend and backend release together under a single `v1.2.0` tag.
+The single-package fixes above do **not** transfer verbatim — the per-component-tag case behaves differently in three ways, each confirmed live:
 
-If the project needs independent release cadences, drop the line and update the deploy trigger — see `references/deploy-stub.md`.
+- **Per-component tags are mandatory; you cannot collapse the monorepo into one `v1.2.0` tag.** `include-component-in-tag` is left at its default (`true`), so each package tags as `backend-v…` / `frontend-v…`. The tempting "release everything under one `v1.2.0` tag" via `include-component-in-tag: false` only survives while *every* release bumps *all* packages in lockstep. The first commit that touches a single package diverges their versions, and release-please then can't map the component-less tag back to the one package that bumped — it logs `There are untagged, merged release PRs outstanding - aborting` and **silently creates no tag or release**. (Verified: a symmetric first release tagged a single `v0.2.0` cleanly, but a later backend-only `fix:` merged with **no** `v0.2.1` produced — the release stranded.)
+- **Keep `package-name` on the Python package.** Unlike the node single-package block (which *removes* it), `package-name` is **required** for non-node release types, so `backend` keeps it; `frontend` (node) doesn't need it. `component` is set on both so the tags read `backend-v…` / `frontend-v…` rather than the full package name.
+- **`separate-pull-requests: true`, not grouped.** Grouped mode (the default) puts both packages in one release PR, but a single title can't carry two different per-component versions, so it renders version-less (`chore: release`) and can't be associated on merge — the release strands with the same `untagged … aborting` error (verified). Separate PRs each carry their own `${component} ${version}`, parse on merge, and tag independently. No `group-pull-request-title-pattern` is needed because there is no grouped PR.
 
-> **Unverified — likely needs the same fix as the single-package block.** Only the single-package config above was verified end-to-end. This monorepo block still carries `package-name` and has no `group-pull-request-title-pattern`, so it probably strands the first release the same way the single-package block did (see #2214 / #2712 above). It almost certainly needs `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` per package, a `group-pull-request-title-pattern` with `${version}`, and the `package-name` lines reconsidered — but the exact shape for the per-component-tag case hasn't been tested, so it's left as-is here rather than changed blind. Fix and verify before relying on it.
+**Tags are `backend-v1.2.0` / `frontend-v1.2.0`, so `deploy.yml` must trigger on the per-component pattern (`*-v*.*.*`), not `v*.*.*`** — see `references/deploy-stub.md`.
+
+**Caveat — merge sibling release PRs one at a time.** When more than one package has a pending release (notably the very first release, where everything bumps at once), each is its own PR editing the shared `.release-please-manifest.json`. Merging one makes the others conflict, and release-please leaves an already-open PR's branch as-is (`PR … remained the same`) rather than rebasing it onto the moved `main`. Recovery is clean and confirmed: **close** the conflicted sibling PR and let release-please **recreate** it against the new `main` on its next run — the recreated PR merges without conflict and tags correctly.
+
+> **Want one `v1.2.0` tag instead (app shipped as a single unit)?** If frontend and backend always deploy together, skip the per-component setup entirely and use the **single-package config above** with the repo root as the one package (`"."`). release-please then bumps the root version file and cuts a single `v1.2.0` tag for the whole repo, keeping the default `v*.*.*` deploy trigger; the per-package version files just aren't tracked individually, which is fine when you never ship them apart. This sidesteps every per-component footgun listed above.
+
+**Verified end-to-end.** On a throwaway frontend(node)+backend(python) repo seeded at `0.1.0`/`0.1.0`, a `feat` touching both packages opened two release PRs (`chore: release backend 0.2.0`, `chore: release frontend 0.2.0`); merging them — closing and letting release-please recreate the second to clear the manifest conflict — produced clean `backend-v0.2.0` and `frontend-v0.2.0` tags + GitHub releases with no manual version edits. The two strand modes called out above (`include-component-in-tag: false` divergence; grouped version-less title) were each reproduced live on parallel throwaway repos to confirm they are real, not theoretical.
 
 ## Manifest — match current version
 
@@ -114,7 +126,7 @@ For brand-new projects (`project-scaffold` flow): start at `0.1.0` — **not `0.
 
 For retrofitting an existing project: read the current version from the project file and use it. Don't reset it — that would lie about the project's history.
 
-Monorepo manifest:
+Monorepo manifest — one entry per package, keyed by the package's path (matching the `packages` keys in the config):
 
 ```json
 {
@@ -122,6 +134,8 @@ Monorepo manifest:
   "frontend": "0.3.1"
 }
 ```
+
+The same `0.0.0` → `1.0.0` bootstrap trap applies per package, so brand-new monorepos seed each entry at `0.1.0` (not `0.0.0`), matching each package's `pyproject.toml` / `package.json`. Retrofits use each package's current version.
 
 ## Conventional commits cheat sheet
 

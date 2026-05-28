@@ -4,11 +4,9 @@ Platform-agnostic. Triggers on `v*.*.*` tag pushes (which release-please creates
 
 ## Default tag pattern
 
-Single-package release-please configs produce `v1.2.0` tags — matched by `tags: ['v*.*.*']`.
+Single-package release-please configs produce `v1.2.0` tags — matched by `tags: ['v*.*.*']`. A fullstack app shipped as a single unit (the single-package config applied at the repo root) uses this trigger too.
 
-Monorepo configs with `include-component-in-tag: false` (the default this skill scaffolds) also produce single `v1.2.0` tags — same trigger works.
-
-Monorepo configs with per-component tags (`frontend-v1.2.0`, `backend-v1.2.0`) need a different trigger pattern — see the "Per-component releases" section at the bottom.
+The fullstack-monorepo config in `references/release-please.md` produces **per-component** tags — `frontend-v1.2.0`, `backend-v1.2.0` — because independently-versioned packages can't share one component-less tag without stranding (see that file for the verified config and why). So a monorepo deploy needs the per-component trigger in the "Per-component releases" section below, **not** `v*.*.*`.
 
 ## Standard `deploy.yml` (prod-only, no staging)
 
@@ -137,9 +135,9 @@ jobs:
       - run: echo "TODO — fill in deploy steps for production"
 ```
 
-## Per-component releases (advanced monorepo)
+## Per-component releases (standard for the fullstack monorepo)
 
-If the user opts out of `include-component-in-tag: false` and wants `frontend-v1.2.0` / `backend-v1.2.0` tags:
+The fullstack-monorepo release-please config produces per-component tags (`frontend-v1.2.0`, `backend-v1.2.0`), so a monorepo deploy uses this trigger:
 
 ```yaml
 on:
@@ -168,7 +166,7 @@ jobs:
       # TODO: dispatch to per-package deploy steps
 ```
 
-Default to the single-tag flow unless the user explicitly asks for per-component.
+Use the single-tag `v*.*.*` flow only for single-package projects (or a fullstack app shipped as one unit via the single-package-at-root config). True frontend+backend monorepos use this per-component trigger.
 
 ## Notes for the report
 
