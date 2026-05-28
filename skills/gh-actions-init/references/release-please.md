@@ -103,9 +103,9 @@ If the project needs independent release cadences, drop the line and update the 
 
 The version here **must match** the project's current version in `package.json` / `pyproject.toml`. If they diverge, release-please's first PR generates a confusing changelog.
 
-For brand-new projects (`project-scaffold` flow): start at `0.0.0` so the first release-please PR cleanly bumps to `0.1.0` (assuming the first batch of commits includes a `feat:`).
+For brand-new projects (`project-scaffold` flow): start at `0.0.1` — **not `0.0.0`**. When the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the first release to `1.0.0` regardless of commit type, ignoring the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`, where one `fix:` commit produced a release PR proposing `1.0.0`). Seeding the manifest + `package.json` / `pyproject.toml` at `0.0.1` makes the first release-please PR compute normally from that baseline: a `feat:` → `0.1.0`, a `fix:` → `0.0.2`.
 
-For retrofitting an existing project: read the current version from the project file and use it. Don't reset to `0.0.0` — that would lie about the project's history.
+For retrofitting an existing project: read the current version from the project file and use it. Don't reset it — that would lie about the project's history.
 
 Monorepo manifest:
 

@@ -25,7 +25,7 @@ npm install --save-dev \
 ```json
 {
   "name": "<project-name>",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {

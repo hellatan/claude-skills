@@ -9,15 +9,18 @@ git init -b main
 
 # Verify the release-please manifest invariant BEFORE the initial commit.
 # package.json version, pyproject.toml version, and
-# .github/.release-please-manifest.json must all read 0.0.0. If any differ,
+# .github/.release-please-manifest.json must all read 0.0.1. If any differ,
 # release-please's first PR opens with a confusing "no changes since X" diff.
+# The baseline is 0.0.1, NOT 0.0.0: an exact-0.0.0 manifest with no tag makes
+# release-please bootstrap the first release to 1.0.0, ignoring the pre-major
+# bump options (googleapis/release-please#2087).
 if [[ -f package.json ]]; then
-  node -e "process.exit(require('./package.json').version === '0.0.0' ? 0 : 1)" \
-    || { echo "ABORT: package.json version must be 0.0.0 before initial commit (see references/configs/nextjs.md)"; exit 1; }
+  node -e "process.exit(require('./package.json').version === '0.0.1' ? 0 : 1)" \
+    || { echo "ABORT: package.json version must be 0.0.1 before initial commit (see references/configs/nextjs.md)"; exit 1; }
 fi
 if [[ -f .github/.release-please-manifest.json ]]; then
-  grep -q '"0.0.0"' .github/.release-please-manifest.json \
-    || { echo "ABORT: .release-please-manifest.json must read 0.0.0 before initial commit"; exit 1; }
+  grep -q '"0.0.1"' .github/.release-please-manifest.json \
+    || { echo "ABORT: .release-please-manifest.json must read 0.0.1 before initial commit"; exit 1; }
 fi
 
 # Activate hooks BEFORE the initial commit so the initial commit lands clean.
@@ -65,7 +68,10 @@ That PR adds nothing of value and is friction for every new project. Running the
 
 ## Why the version check exists
 
-`create-next-app` (and similar generators) initialize `package.json` with `"version": "0.1.0"`. The skill's framework-config step (Step 11 / `references/configs/nextjs.md`) instructs resetting it to `0.0.0`, but it's easy to miss when skimming a long bullet list. If `package.json` ships at `0.1.0` while `.release-please-manifest.json` is at `0.0.0`, release-please's very first PR generates a "no changes since 0.1.0" diff that confuses the project's release history before any code has shipped.
+`create-next-app` (and similar generators) initialize `package.json` with `"version": "0.1.0"`. The skill's framework-config step (Step 11 / `references/configs/nextjs.md`) instructs resetting it to `0.0.1`, but it's easy to miss when skimming a long bullet list. Two ways a missed reset bites:
+
+1. If `package.json` ships at `0.1.0` while `.release-please-manifest.json` is at `0.0.1`, release-please's very first PR generates a confusing "no changes since 0.1.0" diff that lies about the project's release history before any code has shipped.
+2. If the version files are left at `0.0.0` (the old, wrong baseline), release-please bootstraps the first release to `1.0.0` regardless of commit type — the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored when the manifest is exactly `0.0.0` and no tag exists yet ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`). Seeding at `0.0.1` instead makes the first release compute normally (`feat:` → `0.1.0`, `fix:` → `0.0.2`).
 
 Catching the mismatch *before* the initial commit means a missed reset surfaces in 5 seconds, not after the first attempt to cut a release.
 
