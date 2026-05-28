@@ -244,12 +244,12 @@ See `references/step-16-prepush-hooks.md` for the detection commands and the ver
 
 ### 17. Create GitHub repo and push (bracketed by auto-mode halts)
 
-Create the remote with `gh repo create`, then push `main`, `develop`, and (if opted in) `stage` using the override env var Step 16 confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
+Create the remote with `gh repo create`, flip on the repo-level setting that lets GitHub Actions create + approve PRs (otherwise release-please and any other PR-creating workflow fails on first run with the `createPullRequest` GraphQL error), then push `main`, `develop`, and (if opted in) `stage` using the override env var Step 16 confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
 
 The push is bracketed by two **real halts** (not text-only notes — text mid-flow gets skipped past):
 
 - **17a — PRE-PUSH GATE.** Surface a verbatim message telling the user that Claude Code's auto-mode classifier will block the bootstrap push without surfacing an approval dialog, and to toggle auto-mode OFF before replying `go`.
-- **17b — Push.** Run the `gh repo create` + `git push` sequence.
+- **17b — Push.** Run the `gh repo create` + `gh api … actions/permissions/workflow` + `git push` sequence.
 - **17c — POST-PUSH GATE.** Surface a verbatim message that the bootstrap exception is done and the user can toggle auto-mode back ON. Wait for `continue` before proceeding to Step 18.
 
 See `references/step-17-create-repo-push.md` for the bash sequence, the verbatim gate messages, and the full bootstrap-exception contract.
