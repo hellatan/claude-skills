@@ -47,22 +47,27 @@ Adjust `branches:` if the project's release branch isn't `main` (rare).
 
 ```json
 {
-  "release-type": "node",
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "<project-name>",
-      "changelog-path": "CHANGELOG.md",
-      "include-component-in-tag": false
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false
     }
   },
-  "pull-request-title-pattern": "chore: release ${version}",
   "include-v-in-tag": true,
-  "separate-pull-requests": false
+  "pull-request-title-pattern": "chore: release${component} ${version}",
+  "group-pull-request-title-pattern": "chore: release${component} ${version}"
 }
 ```
 
-`release-type` options:
+This exact shape was verified end-to-end on a throwaway repo: a real `feat` commit produced a `chore: release X.Y.Z` PR that, on merge, automatically created a clean `vX.Y.Z` tag + GitHub release with zero manual steps. Two non-obvious requirements make it work:
+
+- **No `package-name`.** With an explicit `package-name` *and* `include-component-in-tag: false`, release-please expects the package's component in the merged release-PR title to associate the release — but `include-component-in-tag: false` strips the component from the title. They never match, so release-please logs `PR component: undefined does not match configured component: <name>` and **silently skips creating the tag/release** ([googleapis/release-please#2214](https://github.com/googleapis/release-please/issues/2214)). Omitting `package-name` makes release-please match by path (`.`) instead, which round-trips correctly and still yields clean `vX.Y.Z` tags. (`changelog-path` is also omitted — `CHANGELOG.md` is the default.)
+- **`group-pull-request-title-pattern` is required, not just `pull-request-title-pattern`.** In grouped mode (`separate-pull-requests: false`, the default) release-please titles the release PR from the **group** pattern, not the per-package one. If only `pull-request-title-pattern` is set, the group pattern defaults to a version-less `chore: release main`; a release PR whose title lacks `${version}` can't be parsed on merge, so the release strands ([googleapis/release-please#2712](https://github.com/googleapis/release-please/issues/2712)). Set both to the same value. `${component}` renders empty for a single root package, so titles read `chore: release 0.1.2` and tags read `v0.1.2`.
+
+`release-type` options (the per-package `release-type` above):
 - `node` — for Node/TS projects, bumps `package.json`
 - `python` — for Python projects, bumps `pyproject.toml`
 - `simple` — manifest-only, no language-specific version file
@@ -91,19 +96,21 @@ Adjust `branches:` if the project's release branch isn't `main` (rare).
 
 If the project needs independent release cadences, drop the line and update the deploy trigger — see `references/deploy-stub.md`.
 
+> **Unverified — likely needs the same fix as the single-package block.** Only the single-package config above was verified end-to-end. This monorepo block still carries `package-name` and has no `group-pull-request-title-pattern`, so it probably strands the first release the same way the single-package block did (see #2214 / #2712 above). It almost certainly needs `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` per package, a `group-pull-request-title-pattern` with `${version}`, and the `package-name` lines reconsidered — but the exact shape for the per-component-tag case hasn't been tested, so it's left as-is here rather than changed blind. Fix and verify before relying on it.
+
 ## Manifest — match current version
 
 `.github/.release-please-manifest.json`:
 
 ```json
 {
-  ".": "0.3.1"
+  ".": "0.1.0"
 }
 ```
 
 The version here **must match** the project's current version in `package.json` / `pyproject.toml`. If they diverge, release-please's first PR generates a confusing changelog.
 
-For brand-new projects (`project-scaffold` flow): start at `0.0.1` — **not `0.0.0`**. When the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the first release to `1.0.0` regardless of commit type, ignoring the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`, where one `fix:` commit produced a release PR proposing `1.0.0`). Seeding the manifest + `package.json` / `pyproject.toml` at `0.0.1` makes the first release-please PR compute normally from that baseline: a `feat:` → `0.1.0`, a `fix:` → `0.0.2`.
+For brand-new projects (`project-scaffold` flow): start at `0.1.0` — **not `0.0.0`**. When the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the first release to `1.0.0` regardless of commit type, ignoring the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`, where one `fix:` commit produced a release PR proposing `1.0.0`). Seeding the manifest + `package.json` / `pyproject.toml` at a normal pre-1.0 version like `0.1.0` sidesteps the bootstrap entirely; release-please then computes the first release as a normal bump from that baseline — a `feat:` → `0.2.0`, a `fix:` → `0.1.1`. The `0.1.0` seed paired with the corrected single-package config above is the exact combination verified end-to-end on a throwaway repo.
 
 For retrofitting an existing project: read the current version from the project file and use it. Don't reset it — that would lie about the project's history.
 
