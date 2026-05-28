@@ -72,7 +72,10 @@ out/
 coverage/
 *.lock
 package-lock.json
+CHANGELOG.md
 ```
+
+`CHANGELOG.md` is ignored because release-please owns its formatting — the changelog it generates doesn't satisfy prettier's `--check`, so without this line the first release turns CI's `format:check` red on `main` the moment it lands.
 
 ---
 

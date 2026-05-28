@@ -18,7 +18,7 @@
 
 ## Manifest-version invariant (new projects)
 
-For brand-new projects (this skill's path), the release-please manifest must start at `0.0.1` — **not `0.0.0`**. A manifest of exactly `0.0.0` with no git tag makes release-please bootstrap the first release to `1.0.0` regardless of commit type (the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored in that case — [googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`). Seeding at `0.0.1` makes the first PR compute normally: a `feat:` → `0.1.0`, a `fix:` → `0.0.2`. `package.json` / `pyproject.toml` `version` must match the manifest. Step 11 already sets both to `0.0.1`; just confirm `gh-actions-init` reads that current value rather than starting from a different default.
+For brand-new projects (this skill's path), the release-please manifest must start at `0.1.0` — **not `0.0.0`**. A manifest of exactly `0.0.0` with no git tag makes release-please bootstrap the first release to `1.0.0` regardless of commit type (the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored in that case — [googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`). Seeding at `0.1.0` makes the first PR compute as a normal bump: a `feat:` → `0.2.0`, a `fix:` → `0.1.1`. `package.json` / `pyproject.toml` `version` must match the manifest. Step 11 already sets both to `0.1.0`; just confirm `gh-actions-init` reads that current value rather than starting from a different default.
 
 ## Sub-skill protocol when invoked from project-scaffold
 
