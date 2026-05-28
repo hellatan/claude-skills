@@ -42,7 +42,7 @@ Root `package.json`:
 {
   "name": "<project-name>-root",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Root scripts for running everything across the repo",
   "scripts": {
     "lint": "npm run lint:frontend && npm run lint:backend",
@@ -94,7 +94,7 @@ Root `package.json`:
 {
   "name": "<project-name>",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "workspaces": ["frontend", "backend", "shared"],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",

@@ -87,7 +87,7 @@ node_version=$(jq -r '.version' package.json)
 python_version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
 ```
 
-If neither has a version (older Python projects sometimes don't), default to `0.0.0` and surface a warning that the user should set `version` in their project file.
+If neither has a version (older Python projects sometimes don't), default to `0.0.1` — *not* `0.0.0`. An exact-`0.0.0` manifest with no tag makes release-please bootstrap the first release to `1.0.0` regardless of commit type ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); see `references/release-please.md`). Also surface a warning that the user should set `version` in their project file.
 
 ## Default branch + branch model
 

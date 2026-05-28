@@ -61,16 +61,16 @@ rm -rf frontend/.git frontend/CLAUDE.md
 # Keep frontend/AGENTS.md — it's useful Next-specific context
 ```
 
-## REQUIRED: reset `package.json` version to `0.0.0`
+## REQUIRED: reset `package.json` version to `0.0.1`
 
-`create-next-app` writes `"version": "0.1.0"` to `package.json`. Reset it to **`0.0.0`** before the initial commit:
+`create-next-app` writes `"version": "0.1.0"` to `package.json`. Reset it to **`0.0.1`** before the initial commit:
 
 ```bash
 # Replace the version field (use Edit / sed / jq — any approach works):
-node -e "const p=require('./package.json'); p.version='0.0.0'; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2)+'\n')"
+node -e "const p=require('./package.json'); p.version='0.0.1'; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2)+'\n')"
 ```
 
-**Why this matters:** release-please's manifest invariant (see `references/step-14-delegate.md`) requires `package.json` version == `.release-please-manifest.json` version == `0.0.0` at scaffold time. The first release-please PR then cleanly bumps to `0.1.0` driven by the first `feat:` commit. If `package.json` is left at `0.1.0` and the manifest at `0.0.0`, release-please's first PR opens with a confusing "no changes since 0.1.0" diff — the project's "history" lies about what shipped.
+**Why `0.0.1` and not `0.0.0`:** release-please's manifest invariant (see `references/step-14-delegate.md`) requires `package.json` version == `.release-please-manifest.json` version at scaffold time. The baseline must be **`0.0.1`**, *not* `0.0.0`: when the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the **first** release to **`1.0.0`** regardless of commit type — the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored in that case. So a brand-new repo whose first release-relevant commit is a `fix:` (or even a `feat:`) silently jumps to a stable `1.0.0` on day one. This is [googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087), and we hit it live on `hellatan/getoffthecouch` (one `fix:` commit → release PR proposing `1.0.0`). Seeding at `0.0.1` makes release-please compute the first release normally from that baseline: a `feat:` → `0.1.0`, a `fix:` → `0.0.2`.
 
 Step 15 verifies this invariant before the initial commit and aborts if it's wrong, so a missed reset surfaces immediately rather than after the first release attempt.
 
