@@ -13,5 +13,8 @@ Thumbs.db
 .claude/local/
 .claude/settings.local.json
 
+# Git worktrees (created under .claude/worktrees/)
+.claude/worktrees/
+
 # Logs
 *.log

@@ -30,6 +30,10 @@ logs/
 
 # Claude Code local state
 .claude/local/
+.claude/settings.local.json
+
+# Git worktrees (when created under .claude/worktrees/)
+.claude/worktrees/
 ```
 
 ---
