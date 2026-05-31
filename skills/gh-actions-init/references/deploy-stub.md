@@ -141,7 +141,12 @@ jobs:
 
 When Render *is* the target, a `render.yaml` Blueprint is dramatically better than dashboard clickops: it encodes the services in the repo, Render provisions them on apply, and prompts for the `sync: false` secrets. The dashboard becomes read-only state instead of the source of truth.
 
-**Before writing the file, ask whether this is a free plan or a paid plan** — it changes the `plan:` values you seed (and there is no way to infer it). Seed accordingly:
+**First ask where Postgres is hosted** — this isn't necessarily Render. Two paths:
+
+- **Render-managed Postgres** — declare a `databases:` block (shown below) and wire `DATABASE_URL` via `fromDatabase`. The free-vs-paid question below applies.
+- **External Postgres (Neon, Supabase, a managed instance, etc.)** — do **not** declare a `databases:` block. Drop it entirely and set `DATABASE_URL` as a `sync: false` secret pointing at the external host; Render prompts for the value on apply. The free-vs-paid Postgres row below is then irrelevant (you pick the tier on Neon/Supabase, not here). This is the path when the user is on Neon.
+
+**For Render-managed Postgres, ask whether it's a free plan or a paid plan** — it changes the `plan:` values you seed (and there is no way to infer it). Seed accordingly:
 
 | | Free | Paid |
 |---|---|---|
@@ -156,7 +161,7 @@ databases:
   - name: <project>-db
     plan: basic-256mb        # paid: smallest tier. Free tier = `free`, but it expires after 30 days.
     region: oregon
-    postgresMajorVersion: "16"
+    postgresMajorVersion: "18"
 
 services:
   - type: web
