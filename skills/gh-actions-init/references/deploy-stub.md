@@ -141,12 +141,20 @@ jobs:
 
 When Render *is* the target, a `render.yaml` Blueprint is dramatically better than dashboard clickops: it encodes the services in the repo, Render provisions them on apply, and prompts for the `sync: false` secrets. The dashboard becomes read-only state instead of the source of truth.
 
-`render.yaml` (Next.js + Postgres example — adjust services/env to the project):
+**Before writing the file, ask whether this is a free plan or a paid plan** — it changes the `plan:` values you seed (and there is no way to infer it). Seed accordingly:
+
+| | Free | Paid |
+|---|---|---|
+| web service `plan:` | `free` | `starter` (bump to `standard`+ as needed) |
+| Postgres `plan:` | `free` | `basic-256mb` (smallest paid tier) |
+| Caveat | Free Postgres **expires after 30 days** and free web services spin down when idle — fine for demos, not for anything that must stay up. | No expiry; charged monthly. |
+
+`render.yaml` (Next.js + Postgres example — **paid plan** shown; swap the two `plan:` lines to `free` for a free-tier blueprint, and adjust services/env to the project):
 
 ```yaml
 databases:
   - name: <project>-db
-    plan: basic-256mb        # smallest paid tier; free tier expires after 30 days
+    plan: basic-256mb        # paid: smallest tier. Free tier = `free`, but it expires after 30 days.
     region: oregon
     postgresMajorVersion: "16"
 
@@ -154,7 +162,7 @@ services:
   - type: web
     name: <project>-web
     runtime: node
-    plan: starter
+    plan: starter            # paid: smallest always-on tier. Free tier = `free` (spins down when idle).
     region: oregon
     branch: main             # deploy from main (release-please tags live here)
     autoDeploy: false        # let deploy.yml / tag pushes drive deploys, not every commit
@@ -178,7 +186,8 @@ Conventions to bake in:
 - **`autoDeploy: false`** so deploys are driven by tags/`deploy.yml`, not every push to `main`.
 - **`sync: false`** for every secret (auth secrets, API keys, credentials) — Render prompts for them on apply rather than reading from the repo.
 - **Idempotent build steps** — anything in `buildCommand` (e.g. `db:migrate`, a seed) must be safe to re-run on every deploy.
-- `region` and `plan` are placeholders — confirm with the user; don't assume Oregon/starter.
+- `region` is a placeholder — confirm with the user; don't assume Oregon.
+- `plan` follows the free-vs-paid answer from the question above — never assume the tier; ask, then seed both the web and Postgres `plan:` lines to match.
 
 With a Blueprint in place, `deploy.yml` still owns *when* to redeploy (trigger Render's deploy on tag push via its API/CLI); the Blueprint owns *what exists* in production.
 
