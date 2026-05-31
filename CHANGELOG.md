@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/hellatan/claude-skills/compare/v1.0.0...v1.1.0) (2026-05-31)
+
+
+### Features
+
+* **project-scaffold:** document toolchain non-goals (no Make, no Biome) ([#38](https://github.com/hellatan/claude-skills/issues/38)) ([662cc4f](https://github.com/hellatan/claude-skills/commit/662cc4fa2ae57eb955a91a9e9b5e8081c09b03c0))
+
 ## 1.0.0 (2026-05-31)
 
 
