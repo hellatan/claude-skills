@@ -18,10 +18,11 @@ Thumbs.db
 *.swo
 *~
 
-# Env
+# Env (.env.example IS committed — keep the negation even if a blanket .env* rule is added)
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Logs
 *.log

@@ -135,6 +135,69 @@ jobs:
       - run: echo "TODO — fill in deploy steps for production"
 ```
 
+## Render Blueprint (`render.yaml`) — opt-in, only when the target is Render
+
+**Generate this only when the user's deploy target is Render.** If they're on Vercel, Fly, Railway, a VPS, or undecided, do **not** write a `render.yaml` — there's nothing to gain from a Render-specific file on a non-Render deploy. In that case ship only the platform-neutral `deploy.yml` stub above.
+
+When Render *is* the target, a `render.yaml` Blueprint is dramatically better than dashboard clickops: it encodes the services in the repo, Render provisions them on apply, and prompts for the `sync: false` secrets. The dashboard becomes read-only state instead of the source of truth.
+
+**First ask where Postgres is hosted** — this isn't necessarily Render. Two paths:
+
+- **Render-managed Postgres** — declare a `databases:` block (shown below) and wire `DATABASE_URL` via `fromDatabase`. The free-vs-paid question below applies.
+- **External Postgres (Neon, Supabase, a managed instance, etc.)** — do **not** declare a `databases:` block. Drop it entirely and set `DATABASE_URL` as a `sync: false` secret pointing at the external host; Render prompts for the value on apply. The free-vs-paid Postgres row below is then irrelevant (you pick the tier on Neon/Supabase, not here). This is the path when the user is on Neon.
+
+**For Render-managed Postgres, ask whether it's a free plan or a paid plan** — it changes the `plan:` values you seed (and there is no way to infer it). Seed accordingly:
+
+| | Free | Paid |
+|---|---|---|
+| web service `plan:` | `free` | `starter` (bump to `standard`+ as needed) |
+| Postgres `plan:` | `free` | `basic-256mb` (smallest paid tier) |
+| Caveat | Free Postgres **expires after 30 days** and free web services spin down when idle — fine for demos, not for anything that must stay up. | No expiry; charged monthly. |
+
+`render.yaml` (Next.js + Postgres example — **paid plan** shown; swap the two `plan:` lines to `free` for a free-tier blueprint, and adjust services/env to the project):
+
+```yaml
+databases:
+  - name: <project>-db
+    plan: basic-256mb        # paid: smallest tier. Free tier = `free`, but it expires after 30 days.
+    region: oregon
+    postgresMajorVersion: "18"
+
+services:
+  - type: web
+    name: <project>-web
+    runtime: node
+    plan: starter            # paid: smallest always-on tier. Free tier = `free` (spins down when idle).
+    region: oregon
+    branch: main             # deploy from main (release-please tags live here)
+    autoDeploy: false        # let deploy.yml / tag pushes drive deploys, not every commit
+    buildCommand: npm ci && npm run db:migrate && npm run build
+    startCommand: npm start
+    healthCheckPath: /        # point at an endpoint that returns 200 unauthenticated
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: <project>-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      # Secrets — Render prompts for these on apply (never commit values):
+      - key: AUTH_SECRET
+        sync: false
+```
+
+Conventions to bake in:
+- **Service naming**: `<project>-db`, `<project>-web`, `<project>-worker`, etc. (the `<project>-` prefix is required.)
+- **`autoDeploy: false`** so deploys are driven by tags/`deploy.yml`, not every push to `main`.
+- **`sync: false`** for every secret (auth secrets, API keys, credentials) — Render prompts for them on apply rather than reading from the repo.
+- **Idempotent build steps** — anything in `buildCommand` (e.g. `db:migrate`, a seed) must be safe to re-run on every deploy.
+- `region` is a placeholder — confirm with the user; don't assume Oregon.
+- `plan` follows the free-vs-paid answer from the question above — never assume the tier; ask, then seed both the web and Postgres `plan:` lines to match.
+
+With a Blueprint in place, `deploy.yml` still owns *when* to redeploy (trigger Render's deploy on tag push via its API/CLI); the Blueprint owns *what exists* in production.
+
+For other known targets the equivalent IaC file is the natural analogue (Fly → `fly.toml`, Railway → `railway.toml`); generate it the same opt-in way. Vercel is mostly dashboard-driven, so `vercel.json` is optional.
+
 ## Per-component releases (standard for the fullstack monorepo)
 
 The fullstack-monorepo release-please config produces per-component tags (`frontend-v1.2.0`, `backend-v1.2.0`), so a monorepo deploy uses this trigger:
