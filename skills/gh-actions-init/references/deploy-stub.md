@@ -141,7 +141,7 @@ jobs:
 
 When Render *is* the target, a `render.yaml` Blueprint is dramatically better than dashboard clickops: it encodes the services in the repo, Render provisions them on apply, and prompts for the `sync: false` secrets. The dashboard becomes read-only state instead of the source of truth.
 
-**First ask where Postgres is hosted** — this isn't necessarily Render. Two paths:
+**First ask where Postgres is hosted** — this isn't necessarily Render. (When invoked from `/project-scaffold`, this was already answered at its Step 4 DB-host question — Neon/Render/Supabase/local — so reuse that answer instead of re-asking.) Two paths:
 
 - **Render-managed Postgres** — declare a `databases:` block (shown below) and wire `DATABASE_URL` via `fromDatabase`. The free-vs-paid question below applies.
 - **External Postgres (Neon, Supabase, a managed instance, etc.)** — do **not** declare a `databases:` block. Drop it entirely and set `DATABASE_URL` as a `sync: false` secret pointing at the external host; Render prompts for the value on apply. The free-vs-paid Postgres row below is then irrelevant (you pick the tier on Neon/Supabase, not here). This is the path when the user is on Neon.

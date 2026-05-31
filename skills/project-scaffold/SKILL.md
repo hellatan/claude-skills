@@ -118,6 +118,38 @@ For Node backend (when not collapsed into Next.js):
 >
 > If you specifically need a separate backend (e.g. you'll have multiple frontends, heavy background jobs, or websockets), say so now. Otherwise reply "ok" or hit enter.
 
+**Then, for any app with a server side (frontend with API routes, fullstack, or backend), ask about a database (opt-in):**
+
+Skip this entirely for **research**, **library**, and pure static frontend projects — they don't persist data.
+
+> Does this project need a database? (yes/no)
+>
+> A database stores data that has to survive between visits — user accounts, posts, orders, anything you'd otherwise lose on restart. If you're not sure yet, say no; it's easy to add later.
+
+If **no**, skip both this and the auth question below. If **yes**, pick the host:
+
+> Where should Postgres live? Default is **Neon**.
+>
+> - **Neon** (default) — serverless Postgres, branchable, generous free tier
+> - **Render Postgres** — co-located with the default deploy target
+> - **Supabase** — Postgres plus a dashboard and extras
+> - **local Docker** — a container on your machine (no managed host yet)
+>
+> Reply with a choice or hit enter for Neon.
+
+Postgres + **Drizzle** (ORM) + `drizzle-zod` is scaffolded regardless of host — see `references/configs/database-drizzle.md` for the client, `drizzle.config.ts`, `db:*` scripts, `.env.example` `DATABASE_URL`, and per-host connection strings. The host answer also drives which `render.yaml` variant `gh-actions-init` emits (Render-managed `databases:` block vs. an external-DB `sync: false` secret).
+
+**Then, only when the project has a database, ask about authentication (opt-in):**
+
+> Add authentication (user sign-up / login)? (yes/no)
+>
+> - **Better Auth** (default) — TypeScript-native, owns its schema, works with your Drizzle setup
+> - **Auth.js / NextAuth** — the long-standing option, more prebuilt OAuth providers
+>
+> Reply yes (Better Auth), "Auth.js", or no.
+
+Never offer auth when the user declined a database — Better Auth persists users/sessions and depends on the DB. **Better Auth is the default and recommended pick; Auth.js stays selectable but never led with** (same posture as CSS Modules vs Tailwind). See `references/configs/auth-better-auth.md` for the adapter wiring, route handler, the `@better-auth/cli generate` → Drizzle migration flow, and the `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` env vars.
+
 ### 5. Layout decision (fullstack only)
 
 This decision depends on the backend language.
@@ -216,8 +248,12 @@ All templates are in `references/configs/`. Pick by stack:
 | Python backend (FastAPI) | `pyproject.toml`, `.python-version` | `configs/python-fastapi.md` |
 | Fullstack | Per-side configs in `frontend/` + `backend/` *plus* root coordination layer (root `package.json`, root pre-commit, root `.gitignore`) | both refs above |
 | Research | `pyproject.toml` (ruff + jupyter only), `.python-version` | `configs/python-fastapi.md` (lighter variant) |
+| Database (if chosen at Step 4) | `drizzle.config.ts`, `src/db/index.ts`, `src/db/schema.ts`, `.env.example` `DATABASE_URL`, `db:*` scripts | `configs/database-drizzle.md` |
+| Auth (if chosen at Step 4) | `src/lib/auth.ts`, `src/app/api/auth/[...all]/route.ts`, `src/lib/auth-client.ts`, generated `src/db/auth-schema.ts`, `.env.example` `BETTER_AUTH_*` | `configs/auth-better-auth.md` |
 
 **Install framework deps for real** — don't reference a tool in scripts without `npm install` / `pip install` first. Each reference doc lists its install commands.
+
+If a database was chosen, run `npm run db:generate` (and the auth CLI generate first, if auth was chosen) so an initial migration exists in `drizzle/` before the first commit. Don't run `db:migrate` during scaffold — there's no live `DATABASE_URL` yet; it runs on first deploy via the `buildCommand`.
 
 **Monorepo gotcha:** ESLint's flat config resolves from CWD. If `eslint.config.mjs` lives in `frontend/`, pre-commit hooks must `cd frontend` first. Handled by `/precommit-init`'s `references/precommit-config.md`.
 
@@ -342,6 +378,8 @@ This is what the scaffold enables out of the box:
   - `root-package-scripts.md`, `python-dev-script.md`
   - `git-workflow-rule.md` — template for the per-repo `.claude/rules/git-workflow.md` Step 10 scaffolds
   - `styling-css-modules.md` — CSS-Modules styling convention (Step 4 default) + how the other styling choices wire up
+  - `database-drizzle.md` — opt-in Drizzle + Postgres setup (Step 4 DB question): client, migrations, `db:*` scripts, per-host connection strings
+  - `auth-better-auth.md` — opt-in auth (Step 4, DB-gated): Better Auth default + Auth.js alternative, adapter wiring, schema-via-Drizzle
 - `references/explainers/concepts.md` — plain-English concept explainers
 
 ### Owned by sister skills
