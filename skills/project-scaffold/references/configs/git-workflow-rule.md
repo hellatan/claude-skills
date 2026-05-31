@@ -15,7 +15,9 @@ Conventions for this repo, intended for both humans and Claude sessions. The CI/
 
 ## Always work in an isolated branch
 
-Never edit files directly on `develop` or `main`. Always create a feature branch first (or a git worktree, if you have multiple parallel changes).
+Never edit files directly on `develop` or `main`. Always create a feature branch first.
+
+**Automated / AI agent sessions (e.g. Claude): always work in a git worktree — no exceptions.** Don't edit files in the primary checkout, even on a feature branch. Working in the primary checkout pollutes the user's branch list and causes working-directory-reset confusion across tool calls. Create an isolated worktree as the first action of any code task; if you catch yourself committing in the primary checkout, stop and move the work to a worktree.
 
 Run `git branch --show-current` before every commit. If the result is `develop` or `main`, **stop** — uncommit nothing, but move the changes to a feature branch before committing.
 
@@ -69,6 +71,10 @@ Always `--force-with-lease`, never plain `--force`. Never force-push to `main`/`
 - PR title should follow conventional-commit format (`feat:`, `fix:`, `chore:`, etc.) — release-please uses commit / PR titles to compute version bumps.
 - PR body should include a "Summary" and a "Test plan" (checkbox list of how to verify the change).
 
+## Commit-message hygiene
+
+**Don't write `BREAKING CHANGE:` or `feat!:` in commit-body prose unless you actually mean them.** Conventional-commits parsers (release-please included) match these patterns liberally and will treat text after the marker as a breaking-change description — even inside backticks, even when you're only *referring* to the markers in narrative. The result is a bogus `⚠ BREAKING CHANGES` section in the generated CHANGELOG. If you need to reference them, paraphrase: "the breaking-change footer", "the bang-suffix on `feat`".
+
 ## Release flow (driven by release-please)
 
 1. Feature branches merge into `develop` via PR.
@@ -76,6 +82,8 @@ Always `--force-with-lease`, never plain `--force`. Never force-push to `main`/`
 3. Merging `develop` → `main` triggers `release-please.yml`, which opens (or updates) a release PR against `main` with a generated `CHANGELOG.md` and version bump.
 4. Merging the release PR tags the commit (e.g., `v1.2.0`) and creates a GitHub Release.
 5. The tag push triggers `deploy.yml` for production deploy.
+
+**Release-PR merges — edit the PR *title*, not just the squash-commit title.** release-please reads the **PR title** field (not the merge-commit message) to extract the version on merge. If you need to fix a release PR's title, edit it via the pencil icon on the PR page before merging. Editing only the squash-merge commit title in the merge dialog leaves the PR title wrong, and the auto-tag step silently fails (it parses the wrong text as the version and creates no tag).
 
 ## Why these rules
 

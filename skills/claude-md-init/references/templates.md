@@ -14,6 +14,15 @@ When the project ships with `.claude/rules/git-workflow.md` (which `/project-sca
 
 The `@<path>` directive tells Claude sessions to load the referenced file as additional context, so the per-repo workflow rules apply automatically without depending on the user's global agent memory. Skip this line when retrofitting a CLAUDE.md into a repo that doesn't already have the workflow rule file.
 
+## Conventions every template should include
+
+Add these to each template's `## Conventions` block (in addition to the stack-specific lines already shown below). They're cross-cutting and caused real breakage on past scaffolds:
+
+- **Don't write `BREAKING CHANGE:` or `feat!:` in commit-body prose unless you mean them.** Conventional-commits / release-please parsers match these patterns liberally and will inject a bogus `⚠ BREAKING CHANGES` section into the CHANGELOG. Paraphrase when referring to them ("the breaking-change footer", "the bang-suffix on `feat`").
+- **Env-reading modules must be lazy — throw on first *use*, not at module eval.** A db client / storage client / SDK initializer that throws at import time when an env var is unset will crash `next build` (and any type-check or page-data-collection step that imports it) in CI, where those env vars typically aren't set. Read the env var inside the function/route that needs it, or rely on lazy clients (e.g. `pg.Pool` doesn't connect until the first query). Applies to db clients, storage clients, and third-party SDKs (Stripe, Sentry, etc.).
+
+For frontend/Next.js templates, also include the **styling convention** matching the choice made at scaffold time (CSS Modules is the default — see `project-scaffold/references/configs/styling-css-modules.md`).
+
 ---
 
 ## Universal preamble (always include)
@@ -86,6 +95,9 @@ Run from the repo root:
 - TypeScript strict mode is on. Don't disable it.
 - Imports: type imports first (sorted), then value imports (sorted). Prettier handles this automatically.
 - Imports use the `@/` alias for `src/`.
+- **Styling: CSS Modules.** Co-locate a `*.module.css` per component; reference `className={styles.x}`. No inline `style={{...}}` (beyond truly dynamic values), no Tailwind utility classes. (Replace this line with the chosen styling approach if not CSS Modules.)
+- **Env-reading modules are lazy** — throw on first use, not at module eval, or `next build` crashes in CI where env vars are unset.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required (release-please drives off them).
 ```
 
