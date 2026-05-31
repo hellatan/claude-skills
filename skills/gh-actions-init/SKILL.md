@@ -72,6 +72,10 @@ If it exists: skip with a "you already have a deploy workflow" note.
 
 If it doesn't: scaffold the stub. The stub lists Render, Vercel, Fly.io, Railway, GHCR, and SSH/rsync as commented alternatives, all on equal footing (each needs user-supplied credentials), with a "How to use this file" header that walks the user through picking a target and adding the secrets it needs.
 
+**d. develop → main auto-PR** — `develop-to-main-pr.yml`.
+
+Only relevant when `develop` exists AND there's no `stage` branch (gitflow without staging). Auto-opens/refreshes a draft `develop → main` PR so releases never wait on someone remembering to open it manually. Skip for `main`-only repos and for repos with a `stage` branch (staging topology needs a different two-workflow setup — leave a note). Skip if the file already exists.
+
 ### 3. Show summary, halt for confirmation
 
 Render the plan as a fenced code block with emoji headers (same convention as `project-scaffold` Step 8):
@@ -81,6 +85,7 @@ Render the plan as a fenced code block with emoji headers (same convention as `p
 🤖 CI structure:    <create new ci.yml | extend existing ci.yml: adding [jobs]>
 🚀 release-please:  <scaffolding | skipped (already present)>
 🚀 Deploy stub:     <scaffolding | skipped (already present)>
+🔁 develop→main PR: <scaffolding | skipped (main-only / staging / already present)>
 📝 Files to write:  <list>
 📝 Files to extend: <list>
 🌿 Branch triggers: <main only | main + develop | main + develop + stage>
@@ -130,7 +135,13 @@ See `references/deploy-stub.md`.
 
 One file: `.github/workflows/deploy.yml`. Triggers on `v*.*.*` tag pushes (release-please creates these on release-PR merge). Render, Vercel, Fly.io, Railway, GHCR, and SSH/rsync are all listed as commented alternatives with a "How to use this file" header explaining how to pick one and wire up its secrets.
 
-### 8. Smoke-validate
+### 8. develop → main auto-PR (gitflow, no staging)
+
+See `references/develop-to-main-pr.md`.
+
+One file: `.github/workflows/develop-to-main-pr.yml`. Scaffold it only when `develop` exists and no `stage` branch does. It needs Actions to be allowed to open PRs — `project-scaffold` enables this on fresh repos; for an existing repo, surface the one-time `gh api` enable command from the reference doc in the report. Skip with a note for `main`-only repos and for repos using a `stage` branch.
+
+### 9. Smoke-validate
 
 Don't run actual workflows from the skill (would require pushing). Instead:
 
@@ -139,7 +150,7 @@ Don't run actual workflows from the skill (would require pushing). Instead:
 
 Don't fail the skill if these tools aren't available — they're nice-to-haves.
 
-### 9. Report back
+### 10. Report back
 
 Print:
 - ✅ What was added (file paths)
@@ -155,6 +166,7 @@ Next steps:
 3. (If you don't have tests yet) Run `/testing-init` to add the test jobs that round out the 5-check pipeline
 4. (If you want branch protection on main/develop) Set it up via GitHub UI or `gh api repos/{owner}/{repo}/branches/{branch}/protection`
 5. Make your first conventional commit (`feat:`, `fix:`, etc.) — release-please tracks these for the next release PR
+6. (If develop→main auto-PR was scaffolded) Confirm Actions can open PRs — `project-scaffold` enables this; for an existing repo run the `gh api ... actions/permissions/workflow` command in `references/develop-to-main-pr.md`
 ```
 
 ---
@@ -164,6 +176,7 @@ Next steps:
 - `references/detection.md` — how to read stack + existing workflows + version state + branch model
 - `references/ci-structure.md` — per-stack lint + typecheck + format:check + build jobs; extend-vs-create logic
 - `references/release-please.md` — workflow, config, manifest; monorepo variant; tag-pattern gotchas
+- `references/develop-to-main-pr.md` — `develop-to-main-pr.yml`: auto-opens/refreshes the draft `develop → main` release PR (gitflow without staging)
 - `references/deploy-stub.md` — `deploy.yml` with the deploy-target picker, secret-setup guidance, and platform examples (Render, Vercel, Fly, Railway, GHCR, SSH/rsync)
 
 ## Why these defaults
