@@ -18,10 +18,11 @@ Thumbs.db
 *.swo
 *~
 
-# Env
+# Env (.env.example IS committed — keep the negation even if a blanket .env* rule is added)
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Logs
 *.log
@@ -29,6 +30,10 @@ logs/
 
 # Claude Code local state
 .claude/local/
+.claude/settings.local.json
+
+# Git worktrees (when created under .claude/worktrees/)
+.claude/worktrees/
 ```
 
 ---

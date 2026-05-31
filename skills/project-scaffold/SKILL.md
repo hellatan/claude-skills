@@ -29,13 +29,21 @@ User says any of:
 - "init a new repo"
 - "new project with claude config"
 
+## Requires
+
+Both `/testing-init` and `/gh-actions-init` must be installed (Step 14 delegates to them). See `references/sister-skills-dependency.md`.
+
 ---
 
 ## Flow
 
 Run these steps in order. **Ask questions one at a time.** For decision points where the skill has a strong default, state the default and only wait for an override.
 
-### 1. Project name + location
+### 1. Verify sister skills are installed (fail fast)
+
+Before Step 2, confirm `/testing-init` and `/gh-actions-init` are in the available-skills list. If either is missing, abort with the message in `references/sister-skills-dependency.md` — don't ask the user any questions until the dependency is satisfied.
+
+### 2. Project name + location
 
 Ask:
 - Project name (becomes repo name and directory name)
@@ -49,7 +57,7 @@ Compute the **package name** here too: convert the project name to snake_case fo
 - `uvicorn <package>.main:app` references in CLAUDE.md
 - Test discovery paths
 
-### 2. Project type
+### 3. Project type
 
 Ask:
 
@@ -60,13 +68,30 @@ Ask:
 > - **library** — code meant to be reused by other projects (published as a package)
 > - **research** — exploratory work, notebooks, scripts — no app or website to deploy
 
-### 3. Framework selection (prescriptive)
+### 4. Framework selection (prescriptive)
 
 Apply the prescriptive-defaults pattern. Don't ask what they want — tell them what you're using.
 
 **For frontend or fullstack with a frontend:**
 
 > Going with **Next.js** for the frontend — it's the most flexible choice and handles your whole web app in one framework (pages, APIs, the works). If you specifically need something else (Vite + React, SvelteKit, Vue, etc.), say so now. Otherwise reply "next is fine" or just hit enter.
+
+**Then pick a styling approach (ask — this one's a real preference, not a prescribed default to skip past):**
+
+> How do you want to style it? Default is **CSS Modules** — scoped `.module.css` files per component, no utility-class soup, no extra dependencies.
+>
+> - **CSS Modules** (default) — scoped CSS per component
+> - **Vanilla Extract** — type-safe, zero-runtime CSS-in-TS (`*.css.ts`)
+> - **Tailwind** — utility-first classes (available if you want it)
+> - **Tailwind + shadcn/ui** — Tailwind plus a prebuilt component library
+>
+> Reply with a choice or hit enter for CSS Modules.
+
+CSS Modules is the default and the recommended pick. Tailwind stays available for anyone who prefers it, but never lead with it or present it as the recommendation. Wire the choice through:
+- **CSS Modules** → pass `--no-tailwind` to `create-next-app`; don't install shadcn. Scaffold example UI as `*.module.css` (no inline `style={{...}}`) and include the styling convention in the generated CLAUDE.md / rules (see `references/configs/styling-css-modules.md`).
+- **Vanilla Extract** → pass `--no-tailwind`; don't install shadcn. Add `@vanilla-extract/css` + `@vanilla-extract/next-plugin`, wrap `next.config` with `createVanillaExtractPlugin()`, and co-locate styles as `*.css.ts` (see `references/configs/styling-css-modules.md`).
+- **Tailwind** → omit `--no-tailwind`; don't install shadcn.
+- **Tailwind + shadcn/ui** → omit `--no-tailwind`; run shadcn init.
 
 **For backend or fullstack with a backend, ask the language first IF context is unclear:**
 
@@ -93,7 +118,39 @@ For Node backend (when not collapsed into Next.js):
 >
 > If you specifically need a separate backend (e.g. you'll have multiple frontends, heavy background jobs, or websockets), say so now. Otherwise reply "ok" or hit enter.
 
-### 4. Layout decision (fullstack only)
+**Then, for any app with a server side (frontend with API routes, fullstack, or backend), ask about a database (opt-in):**
+
+Skip this entirely for **research**, **library**, and pure static frontend projects — they don't persist data.
+
+> Does this project need a database? (yes/no)
+>
+> A database stores data that has to survive between visits — user accounts, posts, orders, anything you'd otherwise lose on restart. If you're not sure yet, say no; it's easy to add later.
+
+If **no**, skip both this and the auth question below. If **yes**, pick the host:
+
+> Where should Postgres live? Default is **Neon**.
+>
+> - **Neon** (default) — serverless Postgres, branchable, generous free tier
+> - **Render Postgres** — co-located with the default deploy target
+> - **Supabase** — Postgres plus a dashboard and extras
+> - **local Docker** — a container on your machine (no managed host yet)
+>
+> Reply with a choice or hit enter for Neon.
+
+Postgres + **Drizzle** (ORM) + `drizzle-zod` is scaffolded regardless of host — see `references/configs/database-drizzle.md` for the client, `drizzle.config.ts`, `db:*` scripts, `.env.example` `DATABASE_URL`, and per-host connection strings. The host answer also drives which `render.yaml` variant `gh-actions-init` emits (Render-managed `databases:` block vs. an external-DB `sync: false` secret).
+
+**Then, only when the project has a database, ask about authentication (opt-in):**
+
+> Add authentication (user sign-up / login)? (yes/no)
+>
+> - **Better Auth** (default) — TypeScript-native, owns its schema, works with your Drizzle setup
+> - **Auth.js / NextAuth** — the long-standing option, more prebuilt OAuth providers
+>
+> Reply yes (Better Auth), "Auth.js", or no.
+
+Never offer auth when the user declined a database — Better Auth persists users/sessions and depends on the DB. **Better Auth is the default and recommended pick; Auth.js stays selectable but never led with** (same posture as CSS Modules vs Tailwind). See `references/configs/auth-better-auth.md` for the adapter wiring, route handler, the `@better-auth/cli generate` → Drizzle migration flow, and the `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` env vars.
+
+### 5. Layout decision (fullstack only)
 
 This decision depends on the backend language.
 
@@ -113,7 +170,7 @@ This decision depends on the backend language.
 
 (No alternative offered — workspaces literally can't help when one side is Python.)
 
-### 5. Staging branch
+### 6. Staging branch
 
 Ask:
 
@@ -124,7 +181,7 @@ Ask:
 > - `yes` — set up a `stage` branch with its own protected workflow (lifecycle becomes feature → develop → stage → main)
 > - `no` — go straight from develop → production (default)
 
-### 6. GitHub repo
+### 7. GitHub repo
 
 Ask:
 
@@ -144,11 +201,13 @@ If the user picked private and is on free tier, **warn now, not later**:
 
 > Heads up — your account is on the free tier, so branch protection won't apply to a private repo. The local pre-commit hooks and CLAUDE.md git rules still protect you, and CI still runs on PRs (you'll just *be able* to merge a failing PR if you ignore the red X). Want to make it public instead, or proceed?
 
-### 7. Show summary, halt for confirmation
+### 8. Show summary, halt for confirmation
 
-Print a plain-English summary of everything about to happen. Group by category (project, stack, branches, code quality, CI, deploy, GitHub) and use plain language — no jargon. Show only the choices made for *this* user's project (don't list options they didn't pick). End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
+Render the plan as a fenced code block with emoji-prefixed group headers (not a markdown bullet section). Show only choices made for *this* user's project. End with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me what to change."*
 
-### 8. **HALT — REAL CONFIRMATION GATE**
+See `references/step-08-summary-template.md` for the layout and rules.
+
+### 9. **HALT — REAL CONFIRMATION GATE**
 
 This is its own dedicated step. **Do not proceed under any circumstances** until the user replies with explicit affirmative confirmation (e.g. "yes", "go", "proceed", "looks good", "ok").
 
@@ -162,360 +221,115 @@ If the user says anything other than affirmative confirmation, ask what they'd l
 
 Once confirmed, proceed through these steps without further halts (unless something fails).
 
-### Step A: Create directory + base files
+### 10. Create directory + base files
 
-```bash
-mkdir -p <parent>/<name>
-cd <parent>/<name>
-```
+`mkdir -p <parent>/<name>`, `cd` in. **For Next.js projects, run `create-next-app` FIRST with `--skip-git`** — see `references/configs/nextjs.md` for the exact flags and post-scaffold cleanup (delete the stub `CLAUDE.md`, keep `AGENTS.md`).
 
-**For projects using Next.js, run `create-next-app` FIRST** (before writing root files), since it creates the project layout. Use the `--skip-git` flag so the skill controls git init in Step F. After `create-next-app`:
-
-- For frontend-only at repo root: clean up `create-next-app`'s leftovers — delete the stub `CLAUDE.md` (skill writes its own), keep `AGENTS.md` (useful Next-specific context).
-- For fullstack with frontend in subdir: same cleanup but in `frontend/` (delete `frontend/CLAUDE.md`, keep `frontend/AGENTS.md`).
-
-See `references/configs/nextjs.md` for the full create-next-app command and post-scaffold steps.
-
-**Then** write these to repo root:
-- `CLAUDE.md` — see `references/claude-md-templates.md`
+Write to repo root:
+- `CLAUDE.md` — owned by `/claude-md-init`; see its `references/templates.md`. The template includes an `@.claude/rules/git-workflow.md` reference so any Claude session on the project loads the workflow rules automatically.
 - `.gitignore` — see `references/gitignores.md`
-- `README.md` — minimal, just `# <project-name>` and a one-line description placeholder
+- `README.md` — minimal: `# <project-name>` + one-line description placeholder
 - `.editorconfig` — see `references/configs/editorconfig.md`
-- `.pre-commit-config.yaml` — see `references/configs/precommit-unified.md`
-
-For fullstack: also create `frontend/` and `backend/` subdirs (frontend already exists if Next.js was used).
-
-For Python projects: create the actual package directory based on the snake_case name from Step 1:
-```bash
-mkdir -p <package_name>
-touch <package_name>/__init__.py
-```
-
-If FastAPI: also write `<package_name>/main.py` with a stub:
-```python
-from fastapi import FastAPI
-
-app = FastAPI()
-
+- `.pre-commit-config.yaml` — owned by `/precommit-init`; see its `references/precommit-config.md`
+- `.claude/rules/git-workflow.md` — per-repo workflow rules (worktree usage, branch off `develop`, refspec push pattern, draft PRs, release-please flow). Verbatim copy of the template content in `references/configs/git-workflow-rule.md`. The whole skill assumes this workflow; scaffolding the rule into the repo makes it discoverable to anyone (or any Claude session) working on the project later, without requiring global agent memory.
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"status": "ok"}
-```
+For fullstack: create `frontend/` and `backend/` subdirs. For Python: create `<package_name>/__init__.py` and (if FastAPI) `<package_name>/main.py` — see `references/configs/python-fastapi.md`. For TS without Next.js: stub `src/index.ts` (Node) or `src/main.tsx` (Vite) so `tsc --noEmit` has something to check.
 
-For TypeScript projects without Next.js: write a stub `src/index.ts` (Node) or `src/main.tsx` (Vite/React) so `tsc --noEmit` doesn't fail on empty input. Next.js's own scaffold creates the entry points (`app/page.tsx` etc.).
+**After writing all configs, run `npx prettier --write .` once** so create-next-app's `eslint.config.mjs` and other unformatted files don't trip CI's `format:check` on first push.
 
-After writing all the configs, run `npx prettier --write .` once to format any files (including `eslint.config.mjs` from create-next-app) that aren't yet prettier-formatted. Otherwise CI's `format:check` fails on first push.
+### 11. Stack-specific config files
 
-### Step B: Stack-specific config files
+All templates are in `references/configs/`. Pick by stack:
 
-Based on the stack chosen, write the appropriate config files. **All templates are in `references/configs/`** — read the relevant ones and write them into the project.
+| Stack | Files to write | Reference |
+|---|---|---|
+| Next.js | `package.json`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `.prettierignore`, `next.config.ts` | `configs/nextjs.md` |
+| Node backend (Fastify) | `package.json`, `tsconfig.json`, `eslint.config.js`, `.prettierrc` | `configs/nodejs-backend.md` |
+| Python backend (FastAPI) | `pyproject.toml`, `.python-version` | `configs/python-fastapi.md` |
+| Fullstack | Per-side configs in `frontend/` + `backend/` *plus* root coordination layer (root `package.json`, root pre-commit, root `.gitignore`) | both refs above |
+| Research | `pyproject.toml` (ruff + jupyter only), `.python-version` | `configs/python-fastapi.md` (lighter variant) |
+| Database (if chosen at Step 4) | `drizzle.config.ts`, `src/db/index.ts`, `src/db/schema.ts`, `.env.example` `DATABASE_URL`, `db:*` scripts | `configs/database-drizzle.md` |
+| Auth (if chosen at Step 4) | `src/lib/auth.ts`, `src/app/api/auth/[...all]/route.ts`, `src/lib/auth-client.ts`, generated `src/db/auth-schema.ts`, `.env.example` `BETTER_AUTH_*` | `configs/auth-better-auth.md` |
 
-| Stack | Config files to write |
-|---|---|
-| Next.js (frontend or fullstack-collapsed) | `package.json` (with Next.js + React deps installed), `tsconfig.json` (Next.js preset), `eslint.config.js`, `.prettierrc`, `.prettierignore`, `next.config.js` |
-| Node backend (Fastify) | `package.json`, `tsconfig.json`, `eslint.config.js`, `.prettierrc` |
-| Python backend (FastAPI) | `pyproject.toml` (with FastAPI + uvicorn + dev deps), `.python-version` |
-| Fullstack (any combo) | Both sets in `frontend/` and `backend/` subdirs PLUS root coordination layer (root `package.json` with cross-stack scripts, root pre-commit config, root `.gitignore` covering both) |
-| Library | Stack-appropriate config + publishing setup |
-| Research | `pyproject.toml` (lighter — just ruff + jupyter), `.python-version` |
+**Install framework deps for real** — don't reference a tool in scripts without `npm install` / `pip install` first. Each reference doc lists its install commands.
 
-**Critical for monorepo/fullstack:** ensure ESLint flat config (`eslint.config.js`) is generated **at the location where lint-staged will invoke it** — for fullstack with frontend in subdir, the workspace config is in `frontend/`, but for ESLint to resolve correctly when called from root, the pre-commit hooks must `cd` into the right directory (handled in `references/configs/precommit-unified.md`).
+If a database was chosen, run `npm run db:generate` (and the auth CLI generate first, if auth was chosen) so an initial migration exists in `drizzle/` before the first commit. Don't run `db:migrate` during scaffold — there's no live `DATABASE_URL` yet; it runs on first deploy via the `buildCommand`.
 
-**Install actual framework dependencies, not just the config that references them.** Don't generate a `package.json` that says `"dev": "vite"` if Vite isn't installed. Run the install commands during scaffold:
+**Monorepo gotcha:** ESLint's flat config resolves from CWD. If `eslint.config.mjs` lives in `frontend/`, pre-commit hooks must `cd frontend` first. Handled by `/precommit-init`'s `references/precommit-config.md`.
 
-For Next.js:
-```bash
-npx create-next-app@latest <project-or-frontend-dir> --typescript --eslint --app --src-dir --import-alias "@/*" --use-npm --no-tailwind
-```
+### 12. Root-level command runner
 
-For Fastify:
-```bash
-npm install fastify
-npm install --save-dev typescript tsx @types/node
-```
+So users can run lint/test/build from one place without Make (which isn't cross-platform). The canonical command is **`check:all`** — runs everything CI would run.
 
-For FastAPI:
-```toml
-# Add to pyproject.toml dependencies:
-dependencies = [
-  "fastapi>=0.115",
-  "uvicorn[standard]>=0.32",
-]
-```
+- **Any project with Node:** root `package.json` with proxying scripts. See `references/configs/root-package-scripts.md` for the full template per stack.
+- **Python-only:** scaffold `scripts/dev.py` instead. See `references/configs/python-dev-script.md`.
 
-### Step C: Root-level command runner
+### 13. Pre-commit hooks (single unified system at root)
 
-Scaffold root commands so users can run lint/test/build from one place without needing Make (which isn't cross-platform).
+Owned by `/precommit-init`. Install `pip install pre-commit` and write the per-stack `.pre-commit-config.yaml` from its `references/precommit-config.md` — but **stop before `pre-commit install`** in this flow because `.git/` doesn't exist yet (Step 15 handles activation after `git init`).
 
-**For any project with a Node component (frontend, fullstack, or Node backend):**
+The config dispatches by file pattern: staging only Python files runs only Python hooks, staging only TS files runs only TS hooks, mixing runs both. All from root.
 
-Generate a root `package.json` with proxying scripts. See `references/configs/root-package-scripts.md` for the full template per stack. Example for Node+Python fullstack:
+### 14. Tests + GitHub Actions (delegate to sister skills)
 
-```json
-{
-  "name": "<project-name>-root",
-  "private": true,
-  "version": "0.0.0",
-  "scripts": {
-    "lint": "npm run lint:frontend && npm run lint:backend",
-    "lint:frontend": "npm --prefix frontend run lint",
-    "lint:backend": "cd backend && ruff check . && mypy .",
-    "format": "npm run format:frontend && npm run format:backend",
-    "format:frontend": "npm --prefix frontend run format",
-    "format:backend": "cd backend && ruff format .",
-    "typecheck": "npm run typecheck:frontend && npm run typecheck:backend",
-    "typecheck:frontend": "npm --prefix frontend run typecheck",
-    "typecheck:backend": "cd backend && mypy .",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "npm --prefix frontend test",
-    "test:backend": "cd backend && pytest",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "npm --prefix frontend run build",
-    "build:backend": "cd backend && python -m build",
-    "dev": "npm run dev:frontend & npm run dev:backend",
-    "dev:frontend": "npm --prefix frontend run dev",
-    "dev:backend": "cd backend && uvicorn <package>.main:app --reload",
-    "check:all": "npm run lint && npm run typecheck && npm run test"
-  }
-}
-```
+Run `/testing-init`'s execution phase, then `/gh-actions-init`'s. Treat the stack as already-known and skip their detection + summary-halt gates (project-scaffold's Step 9 covered those).
 
-**For Python-only projects:** scaffold `scripts/dev.py` instead — npm wouldn't be installed. See `references/configs/python-dev-script.md`.
+See `references/step-14-delegate.md` for what each sister skill owns, the manifest-version invariant, and the full sub-skill protocol.
 
-Either way, the canonical command is `check:all` — runs everything CI would run.
+### 15. Git init with main + develop (+ optional stage)
 
-### Step D: Pre-commit hooks (single unified system at root)
+Initialize git, **verify the release-please manifest invariant** (`package.json` / `pyproject.toml` / `.release-please-manifest.json` all read `0.1.0` — abort if any differ; `0.1.0` not `0.0.0`, to dodge release-please's `1.0.0` first-release bootstrap — see `references/step-15-git-init.md`), activate pre-commit hooks (deferred from Step 13 since `pre-commit install` needs `.git/` to exist), apply auto-fixers to the working tree, then commit so the initial commit lands clean. Without the pre-commit pass, every scaffold ships with a no-op fixup PR for trailing newlines and prettier nits — generators like `create-next-app` produce files that don't satisfy the hooks, and the bootstrap-exception contract (Step 17) prevents pushing those fixes directly to `develop`. The version check catches missed resets in 5 seconds rather than at the first release attempt. Create `main` + `develop` (+ `stage` if opted in) and check out `develop`.
 
-**Default to `pre-commit` for everything**, regardless of stack. Drop husky entirely — it's the wrong tool for polyglot repos and doesn't add anything for single-language ones that pre-commit can't do.
+See `references/step-15-git-init.md` for the bash sequence and the version-invariant check.
 
-Install the package:
+### 16. Detect pre-push protection before pushing
 
-```bash
-pip install pre-commit  # or: uv add --dev pre-commit
-```
+Before Step 17 pushes to `main`/`develop`, check whether anything will block direct pushes to protected branches. Check **all four** common sources, not just `core.hooksPath`:
 
-Generate `.pre-commit-config.yaml` at repo root based on which stacks are present. See `references/configs/precommit-unified.md` for the full per-stack template.
+1. `git config --global core.hooksPath` (git's own hook directory)
+2. Claude harness hooks at `~/.claude/hooks/*.{py,sh}` (these run *before* git sees the push)
+3. Shell aliases/functions shadowing `git`
+4. `git config --global init.templateDir` (template applied to fresh `git init`)
 
-**Do NOT run `pre-commit install` yet** — it requires `.git/` to exist. The skill calls `pre-commit install` at the end of Step F (after `git init`), then `pre-commit autoupdate` to bump hook revs to current versions.
+If any source produces a hit, surface the verbatim warning that frames this as the skill's **documented bootstrap exception** (not a violation of the user's global rules) and ask about override env var conventions before attempting the push. Surfacing this *before* Step 17 keeps the bootstrap atomic.
 
-The config dispatches by file pattern — staging only Python files runs only Python hooks, staging only TS files runs only TS hooks, mixing runs both. All from root.
+See `references/step-16-prepush-hooks.md` for the detection commands and the verbatim warning message.
 
-### Step E: GitHub Actions workflows
+### 17. Create GitHub repo and push (bracketed by auto-mode halts)
 
-Write workflows to `.github/workflows/`:
+Create the remote with `gh repo create`, flip on the repo-level setting that lets GitHub Actions create + approve PRs (otherwise release-please and any other PR-creating workflow fails on first run with the `createPullRequest` GraphQL error), then push `main`, `develop`, and (if opted in) `stage` using the override env var Step 16 confirmed. **This is the only step in the entire skill that pushes directly to protected branches** — the exception is push-only, scoped to seeding the remote, and never extends to subsequent operations.
 
-1. **`ci.yml`** — the 5-check pipeline (lint+typecheck, unit, integration, e2e, build). Pick the right variant from `references/workflows/`:
-   - `ci-node.md` — Node/TS only (including Next.js-only and Node-only backend)
-   - `ci-python.md` — Python only
-   - `ci-fullstack-py-ts.md` — Python BE + TS FE
-   - `ci-fullstack-node-ts.md` — Node BE + TS FE (separate from Next.js-only)
+The push is bracketed by two **real halts** (not text-only notes — text mid-flow gets skipped past):
 
-2. **`release-please.yml`** — runs on push to `main`, opens/updates a release PR; on merge of release PR, tags + creates GitHub release. See `references/workflows/release-please.md`.
+- **17a — PRE-PUSH GATE.** Surface a verbatim message telling the user that Claude Code's auto-mode classifier will block the bootstrap push without surfacing an approval dialog, and to toggle auto-mode OFF before replying `go`.
+- **17b — Push.** Run the `gh repo create` + `gh api … actions/permissions/workflow` + `git push` sequence.
+- **17c — POST-PUSH GATE.** Surface a verbatim message that the bootstrap exception is done and the user can toggle auto-mode back ON. Wait for `continue` before proceeding to Step 18.
 
-3. **`deploy.yml`** — triggers on tag push (and optionally on push to `develop` for staging if user opted in). Platform-agnostic stub. See `references/workflows/deploy.md`.
+See `references/step-17-create-repo-push.md` for the bash sequence, the verbatim gate messages, and the full bootstrap-exception contract.
 
-Also write `.github/release-please-config.json` and `.github/.release-please-manifest.json`. Manifest starts at `0.0.0` so the first release-please PR cleanly bumps to `0.1.0`. The `pyproject.toml` and `package.json` initial version must match — set both to `0.0.0` at scaffold time.
+### 18. Branch protection (skip if free-tier private)
 
-**Critical: scaffold actually-passing test stubs so CI doesn't fail on first push.**
+Skip entirely if Step 7 showed free-tier + private repo. Otherwise apply protection to `main`, `develop`, and (if staging enabled) `stage`, requiring the CI status checks to pass.
 
-Without test stubs, the CI pipeline fails on `vitest: command not found` or empty pytest collection. Scaffold:
+Owned by `/gitflow-init`. See its `references/branch-protection.md` for the bash function and the 403-fallback message.
 
-- **Node/TS unit test stub:** `src/__tests__/smoke.test.ts` with `expect(1).toBe(1)`
-- **Node/TS e2e test stub:** Playwright config + `e2e/smoke.spec.ts` that loads a page or does `expect(true).toBeTruthy()`
-- **Node/TS integration test stub:** can be skipped with `echo "no integration tests yet" && exit 0` in the workflow until user adds real ones
-- **Python unit test stub:** `tests/test_smoke.py` with `def test_smoke(): assert 1 == 1`
-- **Python integration/e2e:** marker-based, stubs with the markers so collection succeeds even with no tests
+### 19. Set develop as default branch
 
-**Install the test runners as dev deps**, not just reference them in scripts:
+`gh repo edit --default-branch develop` — PRs default to merging into `develop`; `main` only gets touched by release-please's release PRs.
 
-- Node: `vitest`, `@playwright/test`
-- Python: `pytest`, `pytest-cov`
+Owned by `/gitflow-init` (Step 7 of its standalone flow).
 
-### Step F: Git init with main + develop (+ optional stage)
+### 20. Smoke test (verify the scaffold actually works)
 
-```bash
-git init -b main
-git add .
-git commit -m "chore: initial scaffold"
-git branch develop
-```
+Before declaring success, run the full smoke sequence from the project root: install deps → lint → typecheck → `pre-commit run --all-files` → test → build → `check:all`. **Don't use empty commits** — invoke hooks directly so there's no commit cleanup needed.
 
-If staging was opted in:
-```bash
-git branch stage
-```
+If any step fails, report the specific failure and offer to fix. See `references/step-20-smoke-test.md` for the full bash sequence and common failure modes.
 
-Switch to `develop`:
-```bash
-git checkout develop
-```
+### 21. Report back
 
-**Now activate pre-commit hooks** (deferred from Step D because `pre-commit install` requires `.git/` to exist):
+Print a status block (local path, GitHub URL, current branch, files created, branch protection status, smoke test results) followed by the verbatim "Next steps" + "Useful commands" block.
 
-```bash
-pre-commit install
-pre-commit autoupdate
-```
-
-`autoupdate` bumps hook revisions to current versions so the user doesn't start out on stale ones.
-
-### Step G: Detect global pre-push hooks before pushing
-
-Check if the user has a global pre-push hook that might block bootstrap pushes:
-
-```bash
-git config --global core.hooksPath
-ls -la $(git config --global core.hooksPath)/pre-push 2>/dev/null
-```
-
-If a hook exists, **warn the user explicitly**:
-
-> 👀 Detected a global git hook at `<path>` that may block pushing to `main`/`develop`. The bootstrap push needs to seed those branches once before normal protection rules kick in. After this initial push, all future changes go through the normal Pull Request flow.
->
-> If your hook supports an override env var (commonly `ALLOW_PUSH_TO_PROTECTED=1`), I'll use it for the bootstrap push only. Confirm the env var name your hook expects, or let me know if it's something else.
-
-Wait for confirmation before pushing.
-
-### Step H: Create GitHub repo and push
-
-```bash
-gh repo create <name> --private --source=. --remote=origin
-
-# Bootstrap push — exception: this is the ONLY time pushing directly to
-# protected branches is authorized. After this, all changes go through PRs.
-ALLOW_PUSH_TO_PROTECTED=1 git push -u origin main
-ALLOW_PUSH_TO_PROTECTED=1 git push -u origin develop
-
-if staging_enabled:
-  ALLOW_PUSH_TO_PROTECTED=1 git push -u origin stage
-```
-
-**The bootstrap exception is push-only, scoped to seeding the remote.** After this point:
-- All changes (including dep installs, fixups, follow-up commits) go through the standard PR → develop flow
-- Branch protection bypass is **never** authorized for merging PRs
-- The skill must not extend the bootstrap exception to any subsequent operation
-
-### Step I: Branch protection (skip if free-tier private)
-
-Skip this step entirely if Step 6's check showed free-tier + private. Otherwise:
-
-Apply protection to `main`, `develop`, and (if staging enabled) `stage`. Require the CI checks to pass:
-
-```bash
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-
-protect_branch() {
-  local branch=$1
-  gh api -X PUT "repos/$REPO/branches/$branch/protection" --input - <<'EOF'
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": ["lint + typecheck", "unit tests", "integration tests", "e2e tests", "production build"]
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 0,
-    "dismiss_stale_reviews": false,
-    "require_code_owner_reviews": false
-  },
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-EOF
-}
-
-protect_branch main
-protect_branch develop
-if staging_enabled:
-  protect_branch stage
-```
-
-**If protection fails with 403:**
-
-> ⚠️ Branch protection couldn't be applied — GitHub returned a **403 (forbidden — your account/plan isn't allowed to do this)**. Branch protection requires GitHub Pro for private repos. You have three options:
->
-> 1. Make the repo public (everything works, free): `gh repo edit --visibility public`
-> 2. Upgrade to GitHub Pro (~$4/mo) — branch protection works on private repos
-> 3. Skip it for now (your local pre-commit hooks + global git rules still protect you, and CI still runs on PRs — you just *can* merge a failing PR if you ignore the red X)
-
-### Step J: Set develop as default branch
-
-```bash
-gh repo edit --default-branch develop
-```
-
-PRs default to merging into `develop`. `main` only gets touched by release-please's release PRs.
-
-### Step K: Smoke test (verify the scaffold actually works)
-
-Before declaring success, run a smoke test from the project root. **Don't use empty commits** — invoke hooks directly so there's no commit cleanup needed.
-
-```bash
-# 1. Verify deps install cleanly
-if [[ -f package.json ]]; then npm install; fi
-if [[ -f pyproject.toml ]]; then pip install -e ".[dev]"; fi
-
-# 2. Verify linter finds its config and runs
-npm run lint 2>&1 | tail -20  # if Node
-ruff check . 2>&1 | tail -20  # if Python
-
-# 3. Verify typecheck passes
-npm run typecheck 2>&1 | tail -20  # if TS
-mypy . 2>&1 | tail -20  # if Python
-
-# 4. Verify hooks fire correctly (without making a commit)
-pre-commit run --all-files
-
-# 5. Verify test runner finds tests and they pass
-npm run test 2>&1 | tail -20  # if Node
-pytest 2>&1 | tail -20  # if Python
-
-# 6. Verify production build succeeds
-# This catches server-component issues, env-var misses, broken imports,
-# and other failures that lint/typecheck/test don't catch.
-npm run build 2>&1 | tail -20  # if Node
-python -m build 2>&1 | tail -20  # if Python
-
-# 7. Verify check:all (the canonical "run everything CI would run") passes
-npm run check:all 2>&1 | tail -20  # if Node
-python scripts/dev.py check:all 2>&1 | tail -20  # if Python-only
-```
-
-If any step fails, report the specific failure and offer to fix. Common failure modes:
-
-- ESLint can't find config → may need root-level config for monorepo layouts
-- `tsc --noEmit` fails on empty `src/` → may need stub source files
-- Test runner not installed → may need to install vitest/pytest as dev deps
-- `format:check` fails on `eslint.config.mjs` → run `npx prettier --write .` after writing `.prettierrc`
-- mypy fails on imports → check `additional_dependencies` in `.pre-commit-config.yaml`
-- `npm run build` fails on Next.js scaffold → check for missing env vars or bad server-component imports
-
-### Step L: Report back
-
-Show the user:
-
-- ✅ Local path
-- ✅ GitHub URL (`gh repo view --web` to open in browser)
-- ✅ Current branch (should be `develop`)
-- ✅ Files + workflows created
-- ✅ Branch protection status (applied / skipped with reason)
-- ✅ Smoke test results
-- 📋 **Next steps** (copy verbatim):
-
-```
-Next steps:
-1. Push a feature branch and open a PR to develop to confirm CI runs green
-2. Fill in the deploy target in `.github/workflows/deploy.yml`
-3. Replace the smoke test stubs with real tests as you build features
-4. When ready to release, merge develop → main; release-please will open a release PR
-
-Useful commands (run from repo root):
-- `npm run check:all` — run everything CI would run
-- `npm run dev` — start dev servers
-- `pre-commit run --all-files` — manually run all pre-commit hooks
-```
+See `references/step-21-report-template.md` for the exact template.
 
 ---
 
@@ -548,25 +362,33 @@ This is what the scaffold enables out of the box:
 
 ## Reference files
 
-- `references/claude-md-templates.md` — CLAUDE.md per stack
+### Owned by this skill
+
+- `references/sister-skills-dependency.md` — what Step 1 checks for and why
+- `references/step-14-delegate.md` — delegation order, sub-skill responsibilities, manifest-version invariant, sub-skill protocol
+- `references/step-15-git-init.md` — git init + branch creation + pre-commit activation sequence
+- `references/step-16-prepush-hooks.md` — global pre-push hook detection + warning message
+- `references/step-17-create-repo-push.md` — `gh repo create` + bootstrap push sequence + bootstrap-exception contract
 - `references/gitignores.md` — `.gitignore` per stack
-- `references/configs/` — all per-stack config files
-  - `editorconfig.md`
-  - `nextjs.md` — Next.js-specific config and install commands
-  - `nodejs-backend.md` — Fastify config
-  - `python-fastapi.md` — FastAPI config
-  - `precommit-unified.md` — single root pre-commit config per stack combo
-  - `root-package-scripts.md` — root `package.json` script templates per stack
-  - `python-dev-script.md` — `scripts/dev.py` for Python-only projects
-- `references/workflows/` — all GitHub Actions workflow files
-  - `ci-node.md`
-  - `ci-python.md`
-  - `ci-fullstack-py-ts.md`
-  - `ci-fullstack-node-ts.md`
-  - `release-please.md`
-  - `deploy.md`
-- `references/explainers/` — plain-English concept explainers to surface during scaffold
-  - `concepts.md`
+- `references/step-08-summary-template.md` — emoji-grouped pre-execution summary
+- `references/step-20-smoke-test.md` — full smoke sequence + failure-mode cheatsheet
+- `references/step-21-report-template.md` — verbatim final report + "Next steps" block
+- `references/configs/` — per-stack bootstrap config templates
+  - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
+  - `root-package-scripts.md`, `python-dev-script.md`
+  - `git-workflow-rule.md` — template for the per-repo `.claude/rules/git-workflow.md` Step 10 scaffolds
+  - `styling-css-modules.md` — CSS-Modules styling convention (Step 4 default) + how the other styling choices wire up
+  - `database-drizzle.md` — opt-in Drizzle + Postgres setup (Step 4 DB question): client, migrations, `db:*` scripts, per-host connection strings
+  - `auth-better-auth.md` — opt-in auth (Step 4, DB-gated): Better Auth default + Auth.js alternative, adapter wiring, schema-via-Drizzle
+- `references/explainers/concepts.md` — plain-English concept explainers
+
+### Owned by sister skills
+
+- **`/testing-init`** (Step 14) — test runners + configs + smoke stubs + test scripts + test jobs in `ci.yml`. Templates: `skills/testing-init/references/{runners,test-stubs,scripts,ci-test-job}.md`.
+- **`/gh-actions-init`** (Step 14) — CI structural jobs + release-please + deploy stub. Templates: `skills/gh-actions-init/references/{detection,ci-structure,release-please,deploy-stub}.md`.
+- **`/gitflow-init`** (Steps 18 + 19) — branch protection + default-branch setting (+ develop/stage creation for retrofit). Templates: `skills/gitflow-init/references/branch-protection.md`.
+- **`/precommit-init`** (Step 13) — pre-commit at root, polyglot (Python / Node / fullstack). Templates: `skills/precommit-init/references/precommit-config.md`.
+- **`/claude-md-init`** (Step 10) — per-stack CLAUDE.md templates. Templates: `skills/claude-md-init/references/templates.md`.
 
 ## When NOT to use this skill
 

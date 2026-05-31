@@ -27,7 +27,7 @@ Flags explained:
 - `--import-alias "@/*"` — `@/components/Button` style imports
 - `--no-tailwind` — leave styling choice to the user (they can add Tailwind, CSS modules, styled-components, etc.)
 - `--no-turbopack` — skip Turbopack prompt; project can opt in later if desired
-- `--skip-git` — skill handles `git init` at the repo root in Step F (otherwise create-next-app initializes its own `.git/` and conflicts with later git-init)
+- `--skip-git` — skill handles `git init` at the repo root in Step 15 (otherwise create-next-app initializes its own `.git/` and conflicts with later git-init)
 
 For a fullstack project where the frontend is in a subdirectory:
 
@@ -49,17 +49,35 @@ npx create-next-app@latest frontend \
 `create-next-app` leaves behind files the skill needs to handle:
 
 - **`AGENTS.md`** — Next 16+ ships this as a heads-up about breaking changes for AI tools. Keep it as-is, it's useful context for any LLM working on the project.
-- **`CLAUDE.md`** — Next 16+ ships a stub. **Delete it** — the skill writes its own CLAUDE.md at repo root in Step A. Keeping the Next stub creates two CLAUDE.md files (subdir vs root) that conflict.
+- **`CLAUDE.md`** — Next 16+ ships a stub. **Delete it** — the skill writes its own CLAUDE.md at repo root in Step 10. Keeping the Next stub creates two CLAUDE.md files (subdir vs root) that conflict.
 - **`.git/`** — should not exist if `--skip-git` was passed. If it does (older create-next-app), remove it before the skill's `git init`:
   ```bash
   rm -rf .git AGENTS.md CLAUDE.md  # adjust based on which exist
   ```
+- **`.gitignore`** — `create-next-app` writes a blanket `.env*` rule, which silently gitignores `.env.example` too. If the project will commit a `.env.example` (it should — documents required env vars), append the carve-out so it's tracked:
+  ```bash
+  grep -qxF '!.env.example' .gitignore || printf '\n# .env.example IS committed\n!.env.example\n' >> .gitignore
+  ```
+  (See `references/gitignores.md` — the Universal template already includes this negation; this step reconciles create-next-app's generated file.)
 
 For the **subdir** install path, this cleanup happens in `frontend/`:
 ```bash
 rm -rf frontend/.git frontend/CLAUDE.md
 # Keep frontend/AGENTS.md — it's useful Next-specific context
 ```
+
+## REQUIRED: pin `package.json` version to `0.1.0`
+
+`create-next-app` writes `"version": "0.1.0"` to `package.json`, which is exactly the baseline release-please needs — so no change is needed, but pin it explicitly before the initial commit in case a future `create-next-app` default drifts:
+
+```bash
+# Idempotent pin (use Edit / sed / jq — any approach works):
+node -e "const p=require('./package.json'); p.version='0.1.0'; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2)+'\n')"
+```
+
+**Why `0.1.0` and not `0.0.0`:** release-please's manifest invariant (see `references/step-14-delegate.md`) requires `package.json` version == `.release-please-manifest.json` version at scaffold time. The baseline must be a normal pre-1.0 version like **`0.1.0`**, *not* `0.0.0`: when the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the **first** release to **`1.0.0`** regardless of commit type — the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored in that case. So a brand-new repo whose first release-relevant commit is a `fix:` (or even a `feat:`) silently jumps to a stable `1.0.0` on day one. This is [googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087), and we hit it live on `hellatan/getoffthecouch` (one `fix:` commit → release PR proposing `1.0.0`). Seeding at `0.1.0` makes release-please compute the first release as a normal bump from that baseline: a `feat:` → `0.2.0`, a `fix:` → `0.1.1`. (This `0.1.0` baseline + the corrected release-please config in `gh-actions-init/references/release-please.md` is the combination verified end-to-end on a throwaway repo: a `feat` produced a release PR that auto-tagged a clean `vX.Y.Z` on merge.)
+
+Step 15 verifies this invariant before the initial commit and aborts if it's wrong, so a missed pin surfaces immediately rather than after the first release attempt.
 
 ## Post-scaffold customizations
 
@@ -107,11 +125,9 @@ export default eslintConfig;
 
 3. **Write `.prettierrc`** with the type-imports-first sort plugin (see `node-ts.md`).
 
-4. **Run `npx prettier --write .` once after writing `.prettierrc`** to reformat `eslint.config.mjs` and any other files `create-next-app` left in non-prettier style. Otherwise CI's `format:check` will fail on first push, and the skill's smoke test in Step K would only catch it after several minutes of confusion.
+4. **Run `npx prettier --write .` once after writing `.prettierrc`** to reformat `eslint.config.mjs` and any other files `create-next-app` left in non-prettier style. Otherwise CI's `format:check` will fail on first push, and the skill's smoke test in Step 20 would only catch it after several minutes of confusion.
 
-5. **Set initial version to `0.0.0`** in `package.json` so release-please's first release PR cleanly bumps to `0.1.0`.
-
-6. **Add scripts** for the canonical commands:
+5. **Add scripts** for the canonical commands:
 
 ```json
 {
@@ -119,7 +135,7 @@ export default eslintConfig;
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
@@ -132,7 +148,9 @@ export default eslintConfig;
 }
 ```
 
-7. **Scaffold smoke-test stubs** so CI doesn't fail on first push:
+**Note on `"lint"`:** Use `eslint`, not `next lint`. The `next lint` command was deprecated in Next.js 15 and **removed in Next.js 16** (the version `create-next-app` installs by default now). The ESLint flat config that Next.js scaffolds (`eslint.config.mjs`) already extends `next/core-web-vitals` + `next/typescript`, so running `eslint` directly applies all the same rules with no functional loss. `create-next-app` itself generates `"lint": "eslint"` in its scripts as of Next 16 — overriding with `"next lint"` would re-introduce a broken script.
+
+6. **Scaffold smoke-test stubs** so CI doesn't fail on first push:
 
 `src/__tests__/smoke.test.ts`:
 ```typescript
@@ -172,7 +190,7 @@ export default defineConfig({
 });
 ```
 
-8. **Vitest config** (`vitest.config.ts`):
+7. **Vitest config** (`vitest.config.ts`):
 ```typescript
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';

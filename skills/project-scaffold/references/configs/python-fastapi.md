@@ -24,7 +24,7 @@ Replace `<project_name>` (with hyphens, kebab-case for PyPI) and `<package_name>
 ```toml
 [project]
 name = "<project_name>"
-version = "0.0.0"
+version = "0.1.0"
 description = "<one-liner>"
 requires-python = ">=3.12"
 dependencies = [
@@ -191,7 +191,7 @@ def test_e2e_smoke() -> None:
 ```toml
 [project]
 name = "<project_name>"
-version = "0.0.0"
+version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
   "jupyter",

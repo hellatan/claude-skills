@@ -4,6 +4,25 @@ Pick the template that matches the project type/stack. All templates inherit the
 
 Aim for 50–120 lines total.
 
+## Workflow-rule reference (every template)
+
+When the project ships with `.claude/rules/git-workflow.md` (which `/project-scaffold` Step 10 writes by default), include this line near the top of the CLAUDE.md, right under the project description:
+
+```markdown
+@.claude/rules/git-workflow.md
+```
+
+The `@<path>` directive tells Claude sessions to load the referenced file as additional context, so the per-repo workflow rules apply automatically without depending on the user's global agent memory. Skip this line when retrofitting a CLAUDE.md into a repo that doesn't already have the workflow rule file.
+
+## Conventions every template should include
+
+Add these to each template's `## Conventions` block (in addition to the stack-specific lines already shown below). They're cross-cutting and caused real breakage on past scaffolds:
+
+- **Don't write `BREAKING CHANGE:` or `feat!:` in commit-body prose unless you mean them.** Conventional-commits / release-please parsers match these patterns liberally and will inject a bogus `⚠ BREAKING CHANGES` section into the CHANGELOG. Paraphrase when referring to them ("the breaking-change footer", "the bang-suffix on `feat`").
+- **Env-reading modules must be lazy — throw on first *use*, not at module eval.** A db client / storage client / SDK initializer that throws at import time when an env var is unset will crash `next build` (and any type-check or page-data-collection step that imports it) in CI, where those env vars typically aren't set. Read the env var inside the function/route that needs it, or rely on lazy clients (e.g. `pg.Pool` doesn't connect until the first query). Applies to db clients, storage clients, and third-party SDKs (Stripe, Sentry, etc.).
+
+For frontend/Next.js templates, also include the **styling convention** matching the choice made at scaffold time (CSS Modules is the default — see `project-scaffold/references/configs/styling-css-modules.md`).
+
 ---
 
 ## Universal preamble (always include)
@@ -12,6 +31,8 @@ Aim for 50–120 lines total.
 # <PROJECT_NAME>
 
 <One-line description of what this repo is and what stack.>
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 
@@ -45,11 +66,13 @@ Run from the repo root:
 
 <One-liner: e.g., "Trading dashboard. Next.js 15 + TypeScript.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
 - Feature branches off `develop`, never `main`.
 - Pre-commit runs ESLint + Prettier on staged files. Don't bypass with `--no-verify`.
-- PRs target `develop`. CI runs all 5 checks (lint+typecheck, unit, integration, e2e, build).
+- PRs target `develop`. CI runs the full check suite (lint+typecheck, format:check, unit, e2e, build — plus integration if opted in).
 - Releases: merge `develop` → `main` → release-please PR → tag → deploy.
 
 ## Project map
@@ -72,6 +95,9 @@ Run from the repo root:
 - TypeScript strict mode is on. Don't disable it.
 - Imports: type imports first (sorted), then value imports (sorted). Prettier handles this automatically.
 - Imports use the `@/` alias for `src/`.
+- **Styling: CSS Modules.** Co-locate a `*.module.css` per component; reference `className={styles.x}`. No inline `style={{...}}` (beyond truly dynamic values), no Tailwind utility classes. (Replace this line with the chosen styling approach if not CSS Modules.)
+- **Env-reading modules are lazy** — throw on first use, not at module eval, or `next build` crashes in CI where env vars are unset.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required (release-please drives off them).
 ```
 
@@ -84,11 +110,13 @@ Run from the repo root:
 
 <One-liner: e.g., "Charting API. FastAPI + pandas. Python 3.12.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
 - Feature branches off `develop`, never `main`.
 - Pre-commit runs ruff (lint + format) and mypy on staged files.
-- PRs target `develop`. CI runs all 5 checks.
+- PRs target `develop`. CI runs the full check suite.
 - Releases via release-please.
 
 ## Project map
@@ -122,11 +150,13 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 <One-liner: e.g., "Order execution service. Fastify + TypeScript.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
 - Feature branches off `develop`, never `main`.
 - Pre-commit runs ESLint + Prettier on staged files.
-- PRs target `develop`. CI runs all 5 checks.
+- PRs target `develop`. CI runs the full check suite.
 - Releases via release-please.
 
 ## Project map
@@ -163,9 +193,11 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 <One-liner: e.g., "Trading dashboard. Next.js frontend + FastAPI Python backend.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
-- Feature branches off `develop`. PRs target `develop`. CI runs all 5 checks across both sides.
+- Feature branches off `develop`. PRs target `develop`. CI runs the full check suite across both sides.
 - Pre-commit at repo root runs the right hooks based on which files you've staged (Python files → ruff + mypy; TS files → ESLint + Prettier).
 - Releases via release-please.
 
@@ -199,9 +231,11 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 <One-liner: e.g., "Trading platform. Next.js frontend + Fastify backend, npm workspaces.">
 
+@.claude/rules/git-workflow.md
+
 ## Lifecycle
 
-- Feature branches off `develop`. PRs target `develop`. CI runs all 5 checks.
+- Feature branches off `develop`. PRs target `develop`. CI runs the full check suite.
 - Pre-commit at repo root.
 - Releases via release-please.
 
@@ -243,6 +277,8 @@ Use the matching backend template above as a starting point and:
 # <PROJECT_NAME>
 
 <One-liner: e.g., "Exploratory backtest research for MNQ breakout strategies.">
+
+@.claude/rules/git-workflow.md
 
 ## Lifecycle
 

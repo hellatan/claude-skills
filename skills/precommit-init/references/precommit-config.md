@@ -20,26 +20,29 @@
 pip install pre-commit  # or: uv add --dev pre-commit
 ```
 
-**Important: `pre-commit install` requires `.git/` to exist.** It writes the hook script to `.git/hooks/pre-commit`. If the skill is following Step D before Step F (git init), defer the `pre-commit install` call until after `git init`. Better: run `pre-commit install` as the *last* line of Step F.
+**Important: `pre-commit install` requires `.git/` to exist.** It writes the hook script to `.git/hooks/pre-commit`. If the skill is following Step 13 before Step 15 (git init), defer the `pre-commit install` call until after `git init`. In `project-scaffold`'s flow, Step 15 handles installation **before** the initial commit and runs the auto-fixers against the working tree once, so the initial commit lands clean (see `step-15-git-init.md`).
 
 ```bash
-# Run AFTER git init:
+# Run AFTER git init, BEFORE the initial commit:
 pre-commit install
+pre-commit autoupdate
+git add .
+pre-commit run --all-files || true   # apply auto-fixers
+git add .
+git commit -m "chore: initial scaffold"
 ```
 
 `pre-commit install` writes `.git/hooks/pre-commit` so hooks fire on every commit, regardless of which subdir you commit from. Pre-commit always runs from the repo root.
 
-After writing the config, the skill should also run:
-```bash
-pre-commit autoupdate
-```
-This bumps hook revisions to current versions before the user commits, so they don't start out stale.
+`pre-commit autoupdate` (run before the first commit) bumps hook revisions to current versions so the user doesn't start out on stale ones.
+
+For retrofit cases (existing repo, no scaffold flow), `pre-commit install` happens once after writing the config — no special ordering required, since there's no fresh initial commit to keep clean.
 
 ---
 
 ## Config: Python-only
 
-`.pre-commit-config.yaml` (revs are current at scaffold time — `pre-commit autoupdate` runs automatically in Step F to bump them, and you can re-run it periodically):
+`.pre-commit-config.yaml` (revs are current at scaffold time — `pre-commit autoupdate` runs automatically in Step 15 to bump them, and you can re-run it periodically):
 
 ```yaml
 repos:

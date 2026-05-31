@@ -32,6 +32,8 @@ Already covered by the project's own `package.json` — no separate root config 
 }
 ```
 
+If a database was scaffolded (Step 4), this same `package.json` also carries the `db:generate` / `db:migrate` / `db:push` / `db:studio` scripts — see `database-drizzle.md`.
+
 ---
 
 ## Python + TS Fullstack (independent projects)
@@ -42,7 +44,7 @@ Root `package.json`:
 {
   "name": "<project-name>-root",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Root scripts for running everything across the repo",
   "scripts": {
     "lint": "npm run lint:frontend && npm run lint:backend",
@@ -94,7 +96,7 @@ Root `package.json`:
 {
   "name": "<project-name>",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "workspaces": ["frontend", "backend", "shared"],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
