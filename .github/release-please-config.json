@@ -1,13 +1,14 @@
 {
-  "release-type": "simple",
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
       "release-type": "simple",
-      "package-name": "claude-skills",
-      "changelog-path": "CHANGELOG.md"
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false
     }
   },
-  "pull-request-title-pattern": "chore: release ${version}",
   "include-v-in-tag": true,
-  "separate-pull-requests": false
+  "pull-request-title-pattern": "chore: release${component} ${version}",
+  "group-pull-request-title-pattern": "chore: release${component} ${version}"
 }
