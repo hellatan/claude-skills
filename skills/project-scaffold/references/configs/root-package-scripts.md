@@ -32,6 +32,8 @@ Already covered by the project's own `package.json` — no separate root config 
 }
 ```
 
+If a database was scaffolded (Step 4), this same `package.json` also carries the `db:generate` / `db:migrate` / `db:push` / `db:studio` scripts — see `database-drizzle.md`.
+
 ---
 
 ## Python + TS Fullstack (independent projects)

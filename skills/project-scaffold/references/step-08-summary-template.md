@@ -20,6 +20,12 @@ End the message with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me
 🔨 Stack:
    - <framework — plain-English, e.g. "Next.js (React + TypeScript) — handles both frontend and API routes">
    - <layout note, e.g. "Single-app layout (no separate backend service)">
+🗄️ Database:                                   ← omit group entirely for research/library/static frontend (never asked)
+   - <host + ORM, e.g. "Postgres on Neon, Drizzle ORM">
+   (no database — you said no)                  ← show this line instead when DB was asked and declined
+🔐 Auth:                                         ← include only when a database was chosen
+   - <library, e.g. "Better Auth (email/password)">
+   (no auth — you said no)                       ← show instead when DB chosen but auth declined
 🌿 Branches:
    - `main` — release-only (release-please touches it)
    - `develop` — your day-to-day branch (default for PRs)
