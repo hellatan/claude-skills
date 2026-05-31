@@ -360,6 +360,14 @@ This is what the scaffold enables out of the box:
 - **Next.js for frontend / FastAPI for Python BE**: opinionated batteries-included defaults
 - **`check:all` as the "run everything" command**: cross-platform, no Make required
 
+## Toolchain non-goals (settled — do not drift)
+
+These are decided. Do **not** introduce them on a scaffolded project, even when asked to "match" an existing repo — older hand-built repos that used them predate this skill and are not precedents.
+
+- **No Make / justfile / taskfile.** Canonical commands run through npm — `npm <command>` / `npm run <command>` (e.g. `npm run check:all`, `npm run lint`, `npm run db:migrate`): cross-platform and discoverable via `npm run`. (Python-only repos with no npm use `scripts/dev.py`.) Don't wrap npm scripts in a Makefile — that's the inverse of the user's "expose tools as npm scripts" preference.
+- **No Biome.** ESLint (flat config) + Prettier are canonical for JS/TS lint + format. Biome is a JS/TS-only ESLint+Prettier replacement — it is **not** a polyglot or Python tool, so it solves nothing the defaults don't already cover.
+- **Ruff is canonical for Python** lint + format (Biome has no Python support). This is the Python analog people sometimes confuse Biome for.
+
 ## Reference files
 
 ### Owned by this skill
