@@ -54,6 +54,11 @@ npx create-next-app@latest frontend \
   ```bash
   rm -rf .git AGENTS.md CLAUDE.md  # adjust based on which exist
   ```
+- **`.gitignore`** — `create-next-app` writes a blanket `.env*` rule, which silently gitignores `.env.example` too. If the project will commit a `.env.example` (it should — documents required env vars), append the carve-out so it's tracked:
+  ```bash
+  grep -qxF '!.env.example' .gitignore || printf '\n# .env.example IS committed\n!.env.example\n' >> .gitignore
+  ```
+  (See `references/gitignores.md` — the Universal template already includes this negation; this step reconciles create-next-app's generated file.)
 
 For the **subdir** install path, this cleanup happens in `frontend/`:
 ```bash

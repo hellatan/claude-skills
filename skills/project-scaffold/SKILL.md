@@ -76,6 +76,22 @@ Apply the prescriptive-defaults pattern. Don't ask what they want — tell them 
 
 > Going with **Next.js** for the frontend — it's the most flexible choice and handles your whole web app in one framework (pages, APIs, the works). If you specifically need something else (Vite + React, SvelteKit, Vue, etc.), say so now. Otherwise reply "next is fine" or just hit enter.
 
+**Then pick a styling approach (ask — this one's a real preference, not a prescribed default to skip past):**
+
+> How do you want to style it? Default is **CSS Modules** — scoped `.module.css` files per component, no utility-class soup, no extra dependencies.
+>
+> - **CSS Modules** (default) — scoped CSS per component
+> - **plain CSS** — a single global stylesheet, simplest
+> - **Tailwind** — utility-first classes (available if you want it)
+> - **Tailwind + shadcn/ui** — Tailwind plus a prebuilt component library
+>
+> Reply with a choice or hit enter for CSS Modules.
+
+CSS Modules is the default and the recommended pick. Tailwind stays available for anyone who prefers it, but never lead with it or present it as the recommendation. Wire the choice through:
+- **CSS Modules / plain CSS** → pass `--no-tailwind` to `create-next-app`; don't install shadcn. For CSS Modules, scaffold example UI as `*.module.css` (no inline `style={{...}}`) and include the styling convention in the generated CLAUDE.md / rules (see `references/configs/styling-css-modules.md`).
+- **Tailwind** → omit `--no-tailwind`; don't install shadcn.
+- **Tailwind + shadcn/ui** → omit `--no-tailwind`; run shadcn init.
+
 **For backend or fullstack with a backend, ask the language first IF context is unclear:**
 
 For the backend language question, **don't be prescriptive about Python vs Node** — instead, prompt the user to describe the project's purpose, then diagnose:
@@ -324,6 +340,7 @@ This is what the scaffold enables out of the box:
   - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
   - `root-package-scripts.md`, `python-dev-script.md`
   - `git-workflow-rule.md` — template for the per-repo `.claude/rules/git-workflow.md` Step 10 scaffolds
+  - `styling-css-modules.md` — CSS-Modules styling convention (Step 4 default) + how the other styling choices wire up
 - `references/explainers/concepts.md` — plain-English concept explainers
 
 ### Owned by sister skills
