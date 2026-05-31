@@ -81,14 +81,15 @@ Apply the prescriptive-defaults pattern. Don't ask what they want — tell them 
 > How do you want to style it? Default is **CSS Modules** — scoped `.module.css` files per component, no utility-class soup, no extra dependencies.
 >
 > - **CSS Modules** (default) — scoped CSS per component
-> - **plain CSS** — a single global stylesheet, simplest
+> - **Vanilla Extract** — type-safe, zero-runtime CSS-in-TS (`*.css.ts`)
 > - **Tailwind** — utility-first classes (available if you want it)
 > - **Tailwind + shadcn/ui** — Tailwind plus a prebuilt component library
 >
 > Reply with a choice or hit enter for CSS Modules.
 
 CSS Modules is the default and the recommended pick. Tailwind stays available for anyone who prefers it, but never lead with it or present it as the recommendation. Wire the choice through:
-- **CSS Modules / plain CSS** → pass `--no-tailwind` to `create-next-app`; don't install shadcn. For CSS Modules, scaffold example UI as `*.module.css` (no inline `style={{...}}`) and include the styling convention in the generated CLAUDE.md / rules (see `references/configs/styling-css-modules.md`).
+- **CSS Modules** → pass `--no-tailwind` to `create-next-app`; don't install shadcn. Scaffold example UI as `*.module.css` (no inline `style={{...}}`) and include the styling convention in the generated CLAUDE.md / rules (see `references/configs/styling-css-modules.md`).
+- **Vanilla Extract** → pass `--no-tailwind`; don't install shadcn. Add `@vanilla-extract/css` + `@vanilla-extract/next-plugin`, wrap `next.config` with `createVanillaExtractPlugin()`, and co-locate styles as `*.css.ts` (see `references/configs/styling-css-modules.md`).
 - **Tailwind** → omit `--no-tailwind`; don't install shadcn.
 - **Tailwind + shadcn/ui** → omit `--no-tailwind`; run shadcn init.
 
