@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v5
         with:
+          # token: ${{ secrets.RELEASE_PLEASE_PAT }}   # uncomment + add the secret to make CI run on release PRs (GITHUB_TOKEN-authored PRs don't trigger workflows)
           # Releases are cut from main. Without this, the action defaults to the
           # repo's default branch (develop, per gitflow), so it opened its release
           # PR against develop and never tagged merges into main.
