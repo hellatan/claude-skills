@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/hellatan/claude-skills/compare/v1.1.0...v1.2.0) (2026-06-01)
+
+
+### Features
+
+* **gh-actions-init:** CI re-trigger ergonomics (/rebuild + workflow_dispatch + PAT notes) ([#41](https://github.com/hellatan/claude-skills/issues/41)) ([c75bdb0](https://github.com/hellatan/claude-skills/commit/c75bdb0f89633092a3aa045a8fce24205a93f435))
+
 ## [1.1.0](https://github.com/hellatan/claude-skills/compare/v1.0.0...v1.1.0) (2026-05-31)
 
 
