@@ -14,6 +14,7 @@ on:
     branches: [main, develop]   # adjust per branch detection
   push:
     branches: [main, develop]
+  workflow_dispatch:            # manual "rebuild now" + dispatch target for /rebuild
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -74,6 +75,7 @@ on:
     branches: [main, develop]
   push:
     branches: [main, develop]
+  workflow_dispatch:            # manual "rebuild now" + dispatch target for /rebuild
 
 concurrency:
   group: ci-${{ github.ref }}
