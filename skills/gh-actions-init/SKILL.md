@@ -146,7 +146,13 @@ See `references/develop-to-main-pr.md`.
 
 One file: `.github/workflows/develop-to-main-pr.yml`. Scaffold it only when `develop` exists and no `stage` branch does. It needs Actions to be allowed to open PRs — `project-scaffold` enables this on fresh repos; for an existing repo, surface the one-time `gh api` enable command from the reference doc in the report. Skip with a note for `main`-only repos and for repos using a `stage` branch.
 
-### 9. Smoke-validate
+### 9. /rebuild comment trigger (gitflow)
+
+See `references/rebuild-on-comment.md`.
+
+One file: `.github/workflows/ci-rebuild-on-comment.yml`. Scaffold it only when `develop` exists (gitflow) — it lets a maintainer re-run failed CI from a PR by commenting `/rebuild`, covering bot-authored PRs that `GITHUB_TOKEN` never triggers CI for. Adapt the dispatch-fallback target to the repo's CI workflow filename (`ci.yml`, or `validate.yml` for a docs/skills repo). Skip for `main`-only repos and if the file already exists.
+
+### 10. Smoke-validate
 
 Don't run actual workflows from the skill (would require pushing). Instead:
 
@@ -155,7 +161,7 @@ Don't run actual workflows from the skill (would require pushing). Instead:
 
 Don't fail the skill if these tools aren't available — they're nice-to-haves.
 
-### 10. Report back
+### 11. Report back
 
 Print:
 - ✅ What was added (file paths)

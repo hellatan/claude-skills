@@ -1,4 +1,3 @@
-````markdown
 # /rebuild on comment
 
 A ChatOps re-trigger: commenting `/rebuild` on a PR re-runs its failed CI (or kicks off CI fresh when none ran). Companion to `release-please.md` and `develop-to-main-pr.md`.
@@ -93,4 +92,3 @@ jobs:
 
 - Lives on `develop` (default branch) to be active.
 - Pairs with the PAT setup: PAT fixes bot-PR CI automatically; `/rebuild` is the manual fallback for any red/missing run.
-````
