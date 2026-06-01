@@ -16,6 +16,11 @@ permissions:
   pull-requests: write
   contents: read
 
+# To make CI run on the develop → main PR this workflow opens, give the
+# gh steps a PAT instead of GITHUB_TOKEN (bot-authored PRs don't trigger
+# workflows): add secret RELEASE_PLEASE_PAT and set
+# GH_TOKEN: ${{ secrets.RELEASE_PLEASE_PAT }} on the "Open or refresh PR" step.
+
 concurrency:
   group: develop-to-main-pr
   cancel-in-progress: false

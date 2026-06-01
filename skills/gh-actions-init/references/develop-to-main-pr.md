@@ -19,6 +19,18 @@ gh api -X PUT repos/{owner}/{repo}/actions/permissions/workflow \
   -F can_approve_pull_request_reviews=true
 ```
 
+### Why CI doesn't run on this PR by default (and the PAT fix)
+
+This PR is opened by `github-actions[bot]` via `GITHUB_TOKEN`, and GitHub does not fire workflows for `GITHUB_TOKEN`-created events — so the `develop → main` PR gets no CI checks. To make CI run, give the `gh pr create`/`gh pr edit` steps a PAT instead of the default token: add a fine-grained PAT (Contents + Pull requests: read/write) as secret `RELEASE_PLEASE_PAT` and set it on the relevant steps:
+
+```yaml
+        env:
+          # GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}            # default: PR gets no CI
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_PAT }}        # PAT: PR is user-authored → CI runs
+```
+
+Otherwise, comment `/rebuild` on the PR (`rebuild-on-comment.md`) to run CI manually. Same PAT works for both this workflow and release-please.
+
 ## Workflow
 
 `.github/workflows/develop-to-main-pr.yml`:
