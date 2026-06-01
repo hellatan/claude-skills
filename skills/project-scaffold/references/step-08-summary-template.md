@@ -36,6 +36,8 @@ End the message with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me
 🤖 GitHub Actions (auto-runs on every PR):
    - lint + typecheck → unit tests → integration tests → e2e tests → build
    - Releases handled automatically by release-please
+🔁 CI re-trigger:                               ← include only for gitflow repos (develop exists)
+   - Comment `/rebuild` on a PR to re-run failed CI; `workflow_dispatch` for manual runs
 🚀 Deploy:
    - Stub workflow created — you'll fill in deploy target later
 🐙 GitHub:
