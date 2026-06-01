@@ -35,12 +35,23 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v5
         with:
+          # Pin the release branch. release-please defaults target-branch to the
+          # repo's DEFAULT branch — which gitflow-init sets to `develop` — so
+          # without this it manages develop and opens release PRs against
+          # develop instead of main, even though it's triggered by main pushes.
+          target-branch: main
           # token: ${{ secrets.RELEASE_PLEASE_PAT }}   # see "Why a PAT" below — uncomment to make CI run on release PRs
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 ```
 
-Adjust `branches:` if the project's release branch isn't `main` (rare).
+Both `branches:` (the trigger) and `target-branch:` (the branch release-please
+manages) must point at the release branch — `main` here. **Setting
+`target-branch` is not optional in a gitflow repo:** `gitflow-init` makes
+`develop` the default branch, and an unset `target-branch` silently defaults to
+that default branch, so release-please opens its release PRs against `develop`
+(head `release-please--branches--develop`) and never tags `main`. Adjust both
+lines together if the release branch isn't `main` (rare).
 
 ## Why a PAT (so CI runs on release PRs)
 

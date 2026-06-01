@@ -64,7 +64,7 @@ If it doesn't exist: create a fresh `ci.yml` with just the structural jobs. Test
 
 If any of these already exist: skip the whole release-please piece (don't risk breaking a working release flow). Surface the skip in the report.
 
-If they don't exist: scaffold all three. Manifest version must match `package.json` / `pyproject.toml` version exactly — read the current version, don't hardcode it (fresh `project-scaffold` runs seed `0.1.0`, never `0.0.0`, to avoid release-please's `1.0.0` first-release bootstrap — see `references/release-please.md`).
+If they don't exist: scaffold all three. Manifest version must match `package.json` / `pyproject.toml` version exactly — read the current version, don't hardcode it (fresh `project-scaffold` runs seed `0.1.0`, never `0.0.0`, to avoid release-please's `1.0.0` first-release bootstrap — see `references/release-please.md`). The workflow **must** set `target-branch: main` — in a gitflow repo `develop` is the default branch, and an unset `target-branch` defaults to it, so release-please silently opens release PRs against `develop` and never tags `main` (see `references/release-please.md`).
 
 **c. Deploy stub** — `deploy.yml`.
 
