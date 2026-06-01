@@ -76,6 +76,10 @@ If it doesn't: scaffold the stub. The stub lists Render, Vercel, Fly.io, Railway
 
 Only relevant when `develop` exists AND there's no `stage` branch (gitflow without staging). Auto-opens/refreshes a draft `develop → main` PR so releases never wait on someone remembering to open it manually. Skip for `main`-only repos and for repos with a `stage` branch (staging topology needs a different two-workflow setup — leave a note). Skip if the file already exists.
 
+**e. /rebuild comment trigger** — `ci-rebuild-on-comment.yml`.
+
+Default-on for gitflow repos (where `develop` exists). Lets a maintainer re-run failed CI from a PR by commenting `/rebuild` — covers bot-authored PRs (release-please, develop→main) that `GITHUB_TOKEN` never triggers CI for. Skip for `main`-only repos and if the file already exists. See `references/rebuild-on-comment.md`.
+
 ### 3. Show summary, halt for confirmation
 
 Render the plan as a fenced code block with emoji headers (same convention as `project-scaffold` Step 8):
@@ -86,6 +90,7 @@ Render the plan as a fenced code block with emoji headers (same convention as `p
 🚀 release-please:  <scaffolding | skipped (already present)>
 🚀 Deploy stub:     <scaffolding | skipped (already present)>
 🔁 develop→main PR: <scaffolding | skipped (main-only / staging / already present)>
+🔁 /rebuild trigger: <scaffolding | skipped (main-only / already present)>
 📝 Files to write:  <list>
 📝 Files to extend: <list>
 🌿 Branch triggers: <main only | main + develop | main + develop + stage>
@@ -177,6 +182,7 @@ Next steps:
 - `references/ci-structure.md` — per-stack lint + typecheck + format:check + build jobs; extend-vs-create logic
 - `references/release-please.md` — workflow, config, manifest; monorepo variant; tag-pattern gotchas
 - `references/develop-to-main-pr.md` — `develop-to-main-pr.yml`: auto-opens/refreshes the draft `develop → main` release PR (gitflow without staging)
+- `references/rebuild-on-comment.md` — `ci-rebuild-on-comment.yml`: `/rebuild` PR-comment re-runs failed CI (gitflow); pairs with the PAT setup
 - `references/deploy-stub.md` — `deploy.yml` with the deploy-target picker, secret-setup guidance, and platform examples (Render, Vercel, Fly, Railway, GHCR, SSH/rsync)
 
 ## Why these defaults
