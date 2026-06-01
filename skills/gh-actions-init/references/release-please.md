@@ -35,11 +35,21 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v5
         with:
+          # token: ${{ secrets.RELEASE_PLEASE_PAT }}   # see "Why a PAT" below — uncomment to make CI run on release PRs
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 ```
 
 Adjust `branches:` if the project's release branch isn't `main` (rare).
+
+## Why a PAT (so CI runs on release PRs)
+
+By default release-please opens its PR as `github-actions[bot]` using `GITHUB_TOKEN`. GitHub deliberately does **not** fire workflows for `GITHUB_TOKEN`-created events (recursion guard), so the `pull_request` CI never runs on the release PR — and with strict branch protection it can't satisfy a required check. Two ways out:
+
+1. **Fine-grained PAT (recommended for personal repos).** Create one scoped to the repo with **Contents: read/write** + **Pull requests: read/write**, add it as repo secret `RELEASE_PLEASE_PAT`, and uncomment the `token:` line above. The release PR is then "authored by you" and triggers CI normally. Caveat: a PAT belongs to a person and **expires** — you'll renew it on the schedule you pick.
+2. **GitHub App token** (no expiry, not tied to a person) — more setup; better for shared/long-lived repos.
+
+If you don't wire either, use the `/rebuild` comment workflow (`rebuild-on-comment.md`) to kick CI manually on each release PR.
 
 ## Config — single package (most common)
 
