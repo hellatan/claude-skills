@@ -1,0 +1,60 @@
+name: CI rebuild on comment
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write          # rerun / dispatch workflow runs
+  contents: read
+  pull-requests: write    # post the result comment
+  issues: write           # 👀 reaction (PR comments use the issues reactions endpoint)
+
+concurrency:
+  group: rebuild-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: >
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '/rebuild')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce exact match
+        id: gate
+        env:
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          trimmed="$(printf '%s' "$BODY" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          if [[ "$trimmed" == "/rebuild" ]]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "Comment was not exactly '/rebuild' — ignoring."
+          fi
+
+      - name: Acknowledge with 👀
+        if: steps.gate.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions -f content=eyes
+
+      - name: Re-run failed CI (or dispatch if nothing ran)
+        if: steps.gate.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          head="$(gh pr view "$PR" --json headRefName -q .headRefName)"
+          mapfile -t ids < <(gh run list --branch "$head" --limit 20 \
+            --json databaseId,status,conclusion \
+            -q '.[] | select(.status!="in_progress" and (.conclusion=="failure" or .conclusion=="cancelled" or .conclusion=="timed_out")) | .databaseId')
+          if [[ ${#ids[@]} -gt 0 ]]; then
+            for id in "${ids[@]}"; do gh run rerun "$id" --failed || gh run rerun "$id"; done
+            gh pr comment "$PR" --body "🚀 Re-running ${#ids[@]} failed/cancelled run(s) for \`$head\`."
+          else
+            gh workflow run validate.yml --ref "$head"
+            gh pr comment "$PR" --body "🚀 No prior run to re-run — dispatched \`validate.yml\` on \`$head\`."
+          fi
