@@ -7,6 +7,7 @@ Personal monorepo of Claude Code skills, published as the `ht-skills` plugin.
 | Skill | Description |
 |---|---|
 | [project-scaffold](skills/project-scaffold) | Bootstrap a new project with prescriptive defaults — Next.js / FastAPI, lean CLAUDE.md, git workflow, pre-commit, GitHub Actions CI, release-please, deploy stub. Orchestrates the init skills below for new projects. |
+| [release-workflow-init](skills/release-workflow-init) | Bring the git + release workflow (gitflow branches + protection, release-please, trimmed CI) to a **bare or framework-less** repo — `git init` + private GitHub repo if needed, then orchestrates `gitflow-init` + `gh-actions-init`. The framework-less sibling of `project-scaffold`. |
 | [testing-init](skills/testing-init) | Add a testing pipeline (Vitest / Playwright / pytest) + test stubs + scripts + optional CI test job to an existing project. |
 | [gh-actions-init](skills/gh-actions-init) | Add `.github/workflows/` to an existing project — CI structure, release-please, deploy stub. |
 | [gitflow-init](skills/gitflow-init) | Set up `main` + `develop` (+ optional `stage`), branch protection, and `develop` as the default branch on an existing repo. |
