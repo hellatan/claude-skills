@@ -302,7 +302,7 @@ Create the remote with `gh repo create`, flip on the repo-level setting that let
 The push is bracketed by two **real halts** (not text-only notes — text mid-flow gets skipped past):
 
 - **17a — PRE-PUSH GATE.** Surface a verbatim message telling the user that Claude Code's auto-mode classifier will block the bootstrap push without surfacing an approval dialog, and to toggle auto-mode OFF before replying `go`.
-- **17b — Push.** Run the `gh repo create` + `gh api … actions/permissions/workflow` + `git push` sequence.
+- **17b — Push.** Run the `gh repo create` + `gh api … actions/permissions/workflow` + `git push` sequence, then surface the **`RELEASE_PLEASE_TOKEN` secret callout** — every new repo needs this PAT-backed secret (`gh secret set RELEASE_PLEASE_TOKEN`) or the release-please and develop→main workflows fail on first run. User action; don't ask for the PAT value in chat.
 - **17c — POST-PUSH GATE.** Surface a verbatim message that the bootstrap exception is done and the user can toggle auto-mode back ON. Wait for `continue` before proceeding to Step 18.
 
 See `references/step-17-create-repo-push.md` for the bash sequence, the verbatim gate messages, and the full bootstrap-exception contract.

@@ -53,6 +53,21 @@ If user picked **Public** in Step 7, replace `--private` with `--public`.
 
 The flag names (`default_workflow_permissions=write`, `can_approve_pull_request_reviews=true`) are exact — both are required and both are easy to typo. Doing this immediately after `gh repo create`, before the first push, means the setting is in place before any workflow ever runs.
 
+### The `RELEASE_PLEASE_TOKEN` secret (user action — every new repo needs this)
+
+`release-please.yml` and `develop-to-main-pr.yml` (scaffolded in Step 14 via `gh-actions-init`) author their PRs with the `RELEASE_PLEASE_TOKEN` repo secret instead of `GITHUB_TOKEN` — bot-authored PRs park their CI behind a manual "Approve and run" gate (`action_required`) and never trigger it in the first place, so without the secret those workflows fail with an auth error and no release ever goes green on its own.
+
+This is a **blocking chat callout right after the repo is created** — surface it in Step 17b's output, not just the final report. The secret value is the user's PAT, so the user runs it themselves (the command prompts for the value — don't ask them to paste the PAT into chat):
+
+> 🔑 **Action needed: `RELEASE_PLEASE_TOKEN` secret.** The release workflows authenticate with a fine-grained PAT (Contents: read/write + Pull requests: read/write). Two steps:
+>
+> 1. Make sure this new repo is in the PAT's repository-access list (GitHub → Settings → Developer settings → Fine-grained tokens) — repo-scoped PATs don't cover repos created after them.
+> 2. Run: `gh secret set RELEASE_PLEASE_TOKEN --repo <owner>/<name>` (paste the PAT when prompted).
+>
+> Until this is done, release-please and the develop→main auto-PR fail on their first run.
+
+Don't block the push on it (the workflows only matter once commits land), but re-surface it in the Step 21 report if the user hasn't confirmed it. Verify with `gh secret list --repo <owner>/<name>`.
+
 ## Step 17c — POST-PUSH GATE (halt, tell user to re-enable auto-mode)
 
 Print **verbatim** and wait for explicit reply (`on` / `continue` / `done`) before continuing to Step 18. Don't auto-continue.

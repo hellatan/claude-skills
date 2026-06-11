@@ -11,7 +11,7 @@ This workflow auto-opens (and keeps refreshed) a **draft** PR from `develop` to 
 
 ## Prerequisite: Actions must be allowed to open PRs
 
-This workflow calls `gh pr create`, which fails with `GraphQL: GitHub Actions is not permitted to create or approve pull requests` unless the repo setting **Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"** is enabled. `project-scaffold` enables this automatically on freshly created repos (see `project-scaffold/references/step-17-create-repo-push.md`). For an existing repo, enable it once:
+The repo setting **Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"** governs PR creation via the built-in `GITHUB_TOKEN` — without it, `gh pr create` fails with `GraphQL: GitHub Actions is not permitted to create or approve pull requests`. This workflow authors its PR with the `RELEASE_PLEASE_TOKEN` PAT (next section), which isn't subject to that setting, but enable it anyway: it covers any other workflow that creates PRs with `GITHUB_TOKEN`, and the failure mode if someone reverts to the default token is cryptic. `project-scaffold` enables it automatically on freshly created repos (see `project-scaffold/references/step-17-create-repo-push.md`). For an existing repo, enable it once:
 
 ```bash
 gh api -X PUT repos/{owner}/{repo}/actions/permissions/workflow \
@@ -19,17 +19,11 @@ gh api -X PUT repos/{owner}/{repo}/actions/permissions/workflow \
   -F can_approve_pull_request_reviews=true
 ```
 
-### Why CI doesn't run on this PR by default (and the PAT fix)
+## Prerequisite: the `RELEASE_PLEASE_TOKEN` secret
 
-This PR is opened by `github-actions[bot]` via `GITHUB_TOKEN`, and GitHub does not fire workflows for `GITHUB_TOKEN`-created events — so the `develop → main` PR gets no CI checks. To make CI run, give the `gh pr create`/`gh pr edit` steps a PAT instead of the default token: add a fine-grained PAT (Contents + Pull requests: read/write) as secret `RELEASE_PLEASE_PAT` and set it on the relevant steps:
+If this PR were opened by `github-actions[bot]` via the default `GITHUB_TOKEN`, it would get no CI: GitHub doesn't fire workflows for `GITHUB_TOKEN`-created events (recursion guard), and any run that does start sits in `action_required` waiting for a manual "Approve and run" click (bot-authored PRs aren't trusted). So the workflow below authors the PR with the **`RELEASE_PLEASE_TOKEN`** repo secret — the same fine-grained PAT (Contents + Pull requests: read/write) that `release-please.yml` uses. See `release-please.md` for the secret setup; one secret covers both workflows. Surface it as a blocking setup step if it's missing.
 
-```yaml
-        env:
-          # GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}            # default: PR gets no CI
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_PAT }}        # PAT: PR is user-authored → CI runs
-```
-
-Otherwise, comment `/rebuild` on the PR (`rebuild-on-comment.md`) to run CI manually. Same PAT works for both this workflow and release-please.
+`/rebuild` (`rebuild-on-comment.md`) remains the manual fallback for re-running flaky CI.
 
 ## Workflow
 
@@ -99,7 +93,10 @@ jobs:
       - name: Open or refresh PR
         if: steps.check.outputs.ahead != '0'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Author as a non-bot identity so the PR's CI isn't gated behind manual
+          # approval (PRs opened by github-actions[bot] stick in action_required)
+          # and actually triggers (GITHUB_TOKEN-created events never fire CI).
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           existing=$(gh pr list --base main --head develop --state open --json number -q '.[0].number // empty')
           if [[ -n "$existing" ]]; then
@@ -118,7 +115,7 @@ jobs:
       - name: Close PR if no commits ahead
         if: steps.check.outputs.ahead == '0'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           existing=$(gh pr list --base main --head develop --state open --json number -q '.[0].number // empty')
           if [[ -n "$existing" ]]; then
@@ -133,7 +130,7 @@ jobs:
 
 - **`develop` ahead of `main`** → opens a draft `develop → main` PR titled `chore(release): develop → main`, or refreshes an existing one's body with the current commit list.
 - **`develop` level with `main`** (e.g. right after a release PR lands) → closes any stale open PR so the list stays clean.
-- Uses only the built-in `GITHUB_TOKEN` — no PAT, no extra secrets.
+- Requires the `RELEASE_PLEASE_TOKEN` repo secret (shared with `release-please.yml`) — without it the `gh` steps fail with an auth error. See `release-please.md` for setup.
 
 ## Notes for the report
 
