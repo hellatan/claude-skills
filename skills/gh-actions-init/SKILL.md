@@ -45,6 +45,7 @@ Read these without asking:
 - `package.json` `version` and any `pyproject.toml` `version` — the **starting manifest version** (release-please needs this to match).
 - Default branch — `git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'` (handles `master`, `trunk`, etc.).
 - Branches — does `develop` exist on origin? If not, the project is `main`-only and CI triggers should reflect that.
+- `RELEASE_PLEASE_TOKEN` secret — `gh secret list` (if scaffolding release-please or develop→main). The scaffolded workflows author their PRs with this PAT instead of `GITHUB_TOKEN`; if it's missing, flag it in the summary and report (see `references/release-please.md`).
 
 Surface findings in one line: *"Detected: Next.js 16 + TS, default branch `develop`, package.json version 0.3.1, no existing workflows."*
 
@@ -64,7 +65,7 @@ If it doesn't exist: create a fresh `ci.yml` with just the structural jobs. Test
 
 If any of these already exist: skip the whole release-please piece (don't risk breaking a working release flow). Surface the skip in the report.
 
-If they don't exist: scaffold all three. Manifest version must match `package.json` / `pyproject.toml` version exactly — read the current version, don't hardcode it (fresh `project-scaffold` runs seed `0.1.0`, never `0.0.0`, to avoid release-please's `1.0.0` first-release bootstrap — see `references/release-please.md`).
+If they don't exist: scaffold all three. Manifest version must match `package.json` / `pyproject.toml` version exactly — read the current version, don't hardcode it (fresh `project-scaffold` runs seed `0.1.0`, never `0.0.0`, to avoid release-please's `1.0.0` first-release bootstrap — see `references/release-please.md`). The workflow **must** set `target-branch: main` — in a gitflow repo `develop` is the default branch, and an unset `target-branch` defaults to it, so release-please silently opens release PRs against `develop` and never tags `main` (see `references/release-please.md`). The workflow **must** also pass `token: ${{ secrets.RELEASE_PLEASE_TOKEN }}` — bot-authored release PRs park their CI behind a manual "Approve and run" gate and never trigger it in the first place; the PAT-backed repo secret is a required per-repo setup step (see `references/release-please.md`).
 
 **c. Deploy stub** — `deploy.yml`.
 
@@ -74,11 +75,11 @@ If it doesn't: scaffold the stub. The stub lists Render, Vercel, Fly.io, Railway
 
 **d. develop → main auto-PR** — `develop-to-main-pr.yml`.
 
-Only relevant when `develop` exists AND there's no `stage` branch (gitflow without staging). Auto-opens/refreshes a draft `develop → main` PR so releases never wait on someone remembering to open it manually. Skip for `main`-only repos and for repos with a `stage` branch (staging topology needs a different two-workflow setup — leave a note). Skip if the file already exists.
+Only relevant when `develop` exists AND there's no `stage` branch (gitflow without staging). Auto-opens/refreshes a draft `develop → main` PR so releases never wait on someone remembering to open it manually. Authors the PR with the same `RELEASE_PLEASE_TOKEN` secret release-please uses. Skip for `main`-only repos and for repos with a `stage` branch (staging topology needs a different two-workflow setup — leave a note). Skip if the file already exists.
 
 **e. /rebuild comment trigger** — `ci-rebuild-on-comment.yml`.
 
-Default-on for gitflow repos (where `develop` exists). Lets a maintainer re-run failed CI from a PR by commenting `/rebuild` — covers bot-authored PRs (release-please, develop→main) that `GITHUB_TOKEN` never triggers CI for. Skip for `main`-only repos and if the file already exists. See `references/rebuild-on-comment.md`.
+Default-on for gitflow repos (where `develop` exists). Lets a maintainer re-run failed CI from a PR by commenting `/rebuild` — the manual fallback for flaky runs and for repos where `RELEASE_PLEASE_TOKEN` isn't set up yet (without the PAT, bot-authored PRs never trigger CI and park behind manual approval). Skip for `main`-only repos and if the file already exists. See `references/rebuild-on-comment.md`.
 
 ### 3. Show summary, halt for confirmation
 
@@ -91,6 +92,7 @@ Render the plan as a fenced code block with emoji headers (same convention as `p
 🚀 Deploy stub:     <scaffolding | skipped (already present)>
 🔁 develop→main PR: <scaffolding | skipped (main-only / staging / already present)>
 🔁 /rebuild trigger: <scaffolding | skipped (main-only / already present)>
+🔑 RELEASE_PLEASE_TOKEN: <secret present | ⚠️ MISSING — setup required before first release>
 📝 Files to write:  <list>
 📝 Files to extend: <list>
 🌿 Branch triggers: <main only | main + develop | main + develop + stage>
@@ -150,7 +152,7 @@ One file: `.github/workflows/develop-to-main-pr.yml`. Scaffold it only when `dev
 
 See `references/rebuild-on-comment.md`.
 
-One file: `.github/workflows/ci-rebuild-on-comment.yml`. Scaffold it only when `develop` exists (gitflow) — it lets a maintainer re-run failed CI from a PR by commenting `/rebuild`, covering bot-authored PRs that `GITHUB_TOKEN` never triggers CI for. Adapt the dispatch-fallback target to the repo's CI workflow filename (`ci.yml`, or `validate.yml` for a docs/skills repo). Skip for `main`-only repos and if the file already exists.
+One file: `.github/workflows/ci-rebuild-on-comment.yml`. Scaffold it only when `develop` exists (gitflow) — it lets a maintainer re-run failed CI from a PR by commenting `/rebuild`, the manual fallback now that `RELEASE_PLEASE_TOKEN` handles bot-PR CI automatically. Adapt the dispatch-fallback target to the repo's CI workflow filename (`ci.yml`, or `validate.yml` for a docs/skills repo). Skip for `main`-only repos and if the file already exists.
 
 ### 10. Smoke-validate
 
@@ -168,16 +170,23 @@ Print:
 - ✅ What was extended (job names added to existing files)
 - ✅ What was skipped and why (existing release-please, etc.)
 - ⚠️ Anything that needs user attention (e.g., stale `on:` triggers in existing CI; missing `engines.node`)
+- 🔑 **If `RELEASE_PLEASE_TOKEN` is missing** (Step 1 check): a **blocking chat callout, not a buried list item** — the scaffolded `release-please.yml` / `develop-to-main-pr.yml` fail with an auth error until the secret exists. Give the exact command and the PAT requirements (fine-grained PAT, Contents + Pull requests: read/write, repo in its access list):
+
+```bash
+gh secret set RELEASE_PLEASE_TOKEN --repo <owner>/<repo>
+```
+
 - 📋 Next steps:
 
 ```
 Next steps:
-1. Push a feature branch and open a PR — confirm CI runs green
-2. Pick a deploy target in `.github/workflows/deploy.yml` and follow the "How to use this file" header inside it to wire up secrets
-3. (If you don't have tests yet) Run `/testing-init` to add the test jobs that round out the 5-check pipeline
-4. (If you want branch protection on main/develop) Set it up via GitHub UI or `gh api repos/{owner}/{repo}/branches/{branch}/protection`
-5. Make your first conventional commit (`feat:`, `fix:`, etc.) — release-please tracks these for the next release PR
-6. (If develop→main auto-PR was scaffolded) Confirm Actions can open PRs — `project-scaffold` enables this; for an existing repo run the `gh api ... actions/permissions/workflow` command in `references/develop-to-main-pr.md`
+1. (If flagged above) Add the RELEASE_PLEASE_TOKEN repo secret — the release workflows fail without it
+2. Push a feature branch and open a PR — confirm CI runs green
+3. Pick a deploy target in `.github/workflows/deploy.yml` and follow the "How to use this file" header inside it to wire up secrets
+4. (If you don't have tests yet) Run `/testing-init` to add the test jobs that round out the 5-check pipeline
+5. (If you want branch protection on main/develop) Set it up via GitHub UI or `gh api repos/{owner}/{repo}/branches/{branch}/protection`
+6. Make your first conventional commit (`feat:`, `fix:`, etc.) — release-please tracks these for the next release PR
+7. (If develop→main auto-PR was scaffolded) Confirm Actions can open PRs — `project-scaffold` enables this; for an existing repo run the `gh api ... actions/permissions/workflow` command in `references/develop-to-main-pr.md`
 ```
 
 ---

@@ -4,7 +4,7 @@ A ChatOps re-trigger: commenting `/rebuild` on a PR re-runs its failed CI (or ki
 
 ## Why this exists
 
-GitHub does not fire workflows for events created by the default `GITHUB_TOKEN` (its guard against recursive Actions loops). PRs opened by `github-actions[bot]` — release-please's release PR and the `develop → main` PR — therefore never trigger the `pull_request` CI, and with strict branch protection they're stuck at "no checks reported." This workflow lets a maintainer re-run CI from the PR with a single comment. (The root fix is a PAT — see `release-please.md` / `develop-to-main-pr.md`; this is the universal manual fallback and a general "re-run flaky CI" affordance.)
+GitHub does not fire workflows for events created by the default `GITHUB_TOKEN` (its guard against recursive Actions loops), and runs on PRs authored by `github-actions[bot]` sit in `action_required` waiting for a manual approval click. The root fix — wired in by default via the `RELEASE_PLEASE_TOKEN` PAT in `release-please.yml` and `develop-to-main-pr.yml` (see `release-please.md`) — is to author those PRs as a real user. This workflow is the universal manual fallback: re-run CI from any PR with a single comment, covering flaky runs, repos where the secret isn't set up yet, or an expired PAT.
 
 ## When to scaffold
 
@@ -91,4 +91,4 @@ jobs:
 ## Notes for the report
 
 - Lives on `develop` (default branch) to be active.
-- Pairs with the PAT setup: PAT fixes bot-PR CI automatically; `/rebuild` is the manual fallback for any red/missing run.
+- Pairs with the PAT setup: the `RELEASE_PLEASE_TOKEN` PAT fixes bot-PR CI automatically (and is scaffolded in by default); `/rebuild` is the manual fallback for any red/missing run.

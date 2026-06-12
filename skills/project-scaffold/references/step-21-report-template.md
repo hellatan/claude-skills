@@ -10,15 +10,17 @@ Show the user a verbatim summary plus a "next steps" block. Use this template:
 - ✅ Files + workflows created
 - ✅ Branch protection status (applied / skipped with reason)
 - ✅ Smoke test results
+- 🔑 `RELEASE_PLEASE_TOKEN` secret status (`gh secret list` — set / ⚠️ still missing). If missing, repeat the Step 17 callout: add the repo to the PAT's access list, then `gh secret set RELEASE_PLEASE_TOKEN --repo <owner>/<name>`. The release workflows fail without it.
 
 ## "Next steps" block (copy verbatim)
 
 ```
 Next steps:
-1. Push a feature branch and open a PR to develop to confirm CI runs green
-2. Fill in the deploy target in `.github/workflows/deploy.yml`
-3. Replace the smoke test stubs with real tests as you build features
-4. When ready to release, merge develop → main; release-please will open a release PR
+1. (If flagged above) Add the RELEASE_PLEASE_TOKEN repo secret — release workflows fail without it
+2. Push a feature branch and open a PR to develop to confirm CI runs green
+3. Fill in the deploy target in `.github/workflows/deploy.yml`
+4. Replace the smoke test stubs with real tests as you build features
+5. When ready to release, merge develop → main; release-please will open a release PR
 
 Useful commands (run from repo root):
 - `npm run check:all` — run everything CI would run

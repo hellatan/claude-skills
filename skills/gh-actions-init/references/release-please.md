@@ -35,21 +35,52 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v5
         with:
-          # token: ${{ secrets.RELEASE_PLEASE_PAT }}   # see "Why a PAT" below — uncomment to make CI run on release PRs
+          # Author the release PR as a non-bot identity (a PAT in repo secrets,
+          # not the built-in GITHUB_TOKEN). PRs opened by github-actions[bot]
+          # leave their CI run stuck in "action_required" (manual approval), so
+          # the release PR never goes green on its own. A real-identity token
+          # also restores CI triggering on the PR (the GITHUB_TOKEN anti-recursion
+          # rule suppresses it). Secret needs contents:write + pull-requests:write.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          # Pin the release branch. release-please defaults target-branch to the
+          # repo's DEFAULT branch — which gitflow-init sets to `develop` — so
+          # without this it manages develop and opens release PRs against
+          # develop instead of main, even though it's triggered by main pushes.
+          target-branch: main
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 ```
 
-Adjust `branches:` if the project's release branch isn't `main` (rare).
+Both `branches:` (the trigger) and `target-branch:` (the branch release-please
+manages) must point at the release branch — `main` here. **Setting
+`target-branch` is not optional in a gitflow repo:** `gitflow-init` makes
+`develop` the default branch, and an unset `target-branch` silently defaults to
+that default branch, so release-please opens its release PRs against `develop`
+(head `release-please--branches--develop`) and never tags `main`. Adjust both
+lines together if the release branch isn't `main` (rare).
 
-## Why a PAT (so CI runs on release PRs)
+## Why a PAT (`RELEASE_PLEASE_TOKEN` — required, not optional)
 
-By default release-please opens its PR as `github-actions[bot]` using `GITHUB_TOKEN`. GitHub deliberately does **not** fire workflows for `GITHUB_TOKEN`-created events (recursion guard), so the `pull_request` CI never runs on the release PR — and with strict branch protection it can't satisfy a required check. Two ways out:
+With the default `GITHUB_TOKEN`, release-please opens its PR as `github-actions[bot]`, which breaks the release flow two ways (both confirmed live, e.g. hellatan/backtesting#31):
 
-1. **Fine-grained PAT (recommended for personal repos).** Create one scoped to the repo with **Contents: read/write** + **Pull requests: read/write**, add it as repo secret `RELEASE_PLEASE_PAT`, and uncomment the `token:` line above. The release PR is then "authored by you" and triggers CI normally. Caveat: a PAT belongs to a person and **expires** — you'll renew it on the schedule you pick.
-2. **GitHub App token** (no expiry, not tied to a person) — more setup; better for shared/long-lived repos.
+1. **No CI trigger.** GitHub deliberately does **not** fire workflows for `GITHUB_TOKEN`-created events (recursion guard), so the `pull_request` CI never runs on the release PR — and with strict branch protection it can't satisfy a required check.
+2. **Manual approval gate.** Workflow runs on bot-authored PRs sit in **`action_required`** — they need a manual "Approve and run" click before CI executes. Even when CI is otherwise wired to run, the release PR never goes green on its own.
 
-If you don't wire either, use the `/rebuild` comment workflow (`rebuild-on-comment.md`) to kick CI manually on each release PR.
+Authoring the PR with a real-identity token fixes both, so the workflow above passes `token: ${{ secrets.RELEASE_PLEASE_TOKEN }}` unconditionally. **Every new repo needs this secret set up — surface it in the report as a blocking step:**
+
+1. Use a fine-grained PAT with **Contents: read/write** + **Pull requests: read/write**, and confirm the new repo is in the PAT's repository-access list (a repo-scoped PAT doesn't cover repos created after it).
+2. Have the user add it as the repo secret (it prompts for the value — don't paste the PAT into chat):
+
+```bash
+gh secret set RELEASE_PLEASE_TOKEN --repo <owner>/<repo>
+```
+
+Caveats:
+
+- A fine-grained PAT belongs to a person and **expires** (≤1 yr) — renew on the schedule you pick. A **GitHub App token** avoids expiry and scales across repos (more setup; better for shared/long-lived repos). Either works.
+- If the secret is missing, the `token:` input renders empty and the workflow fails with an auth error on its first `main` push — the fix is to add the secret, not to fall back to `GITHUB_TOKEN`.
+
+The `/rebuild` comment workflow (`rebuild-on-comment.md`) remains the manual fallback for re-running flaky or stuck CI, but it is no longer the primary way to get checks on release PRs.
 
 ## Config — single package (most common)
 
