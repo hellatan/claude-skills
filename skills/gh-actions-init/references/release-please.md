@@ -68,8 +68,9 @@ With the default `GITHUB_TOKEN`, release-please opens its PR as `github-actions[
 
 Authoring the PR with a real-identity token fixes both, so the workflow above passes `token: ${{ secrets.RELEASE_PLEASE_TOKEN }}` unconditionally. **Every new repo needs this secret set up — surface it in the report as a blocking step:**
 
-1. Use a fine-grained PAT with **Contents: read/write** + **Pull requests: read/write**, and confirm the new repo is in the PAT's repository-access list (a repo-scoped PAT doesn't cover repos created after it).
-2. Have the user add it as the repo secret (it prompts for the value — don't paste the PAT into chat):
+1. Use a fine-grained PAT with **Contents: read/write** + **Pull requests: read/write**.
+2. **Add the repo to the PAT's repository access.** A fine-grained PAT grants either "All repositories" or "Only select repositories" — and if it's the select list, **the repo must be in it**. This is the most-missed step. The repo is *not* added automatically, and a select-list PAT doesn't cover repos created after it.
+3. Have the user add it as the repo secret (it prompts for the value — don't paste the PAT into chat):
 
 ```bash
 gh secret set RELEASE_PLEASE_TOKEN --repo <owner>/<repo>
@@ -77,6 +78,7 @@ gh secret set RELEASE_PLEASE_TOKEN --repo <owner>/<repo>
 
 Caveats:
 
+- **Public-repo trap (silent until PR creation).** A PAT can *read* any public repo even when it's **not** in the PAT's access list, so `gh pr list` succeeds and everything looks wired — but **write** operations need the repo explicitly selected. The symptom is a workflow that fails *only* at the create step with `pull request create failed: GraphQL: Resource not accessible by personal access token (createPullRequest)` while earlier read steps passed. The fix is step 2 (add the repo to the access list), **not** a scope change — `Pull requests: write` is already on; it just doesn't apply to an unselected repo. (Confirmed live on the public `hellatan/claude-skills` while the same PAT created PRs fine on selected private repos.)
 - A fine-grained PAT belongs to a person and **expires** (≤1 yr) — renew on the schedule you pick. A **GitHub App token** avoids expiry and scales across repos (more setup; better for shared/long-lived repos). Either works.
 - If the secret is missing, the `token:` input renders empty and the workflow fails with an auth error on its first `main` push — the fix is to add the secret, not to fall back to `GITHUB_TOKEN`.
 
