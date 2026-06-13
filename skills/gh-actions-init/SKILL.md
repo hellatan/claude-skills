@@ -191,6 +191,18 @@ Next steps:
 
 ---
 
+## Token split across workflows
+
+Three scaffolded workflows, two tokens. The split is deliberate:
+
+| Workflow | Token | Why |
+|---|---|---|
+| `release-please.yml` | `RELEASE_PLEASE_TOKEN` | the release PR must be user-authored so CI runs (and isn't parked behind `action_required`) |
+| `develop-to-main-pr.yml` | `RELEASE_PLEASE_TOKEN` | the `develop → main` PR needs CI for the same reason |
+| `ci-rebuild-on-comment.yml` | `GITHUB_TOKEN` | uses `gh run rerun` + `gh workflow run` (`workflow_dispatch`), both exempt from the recursion guard — a PAT adds nothing |
+
+One PAT secret (`RELEASE_PLEASE_TOKEN`) covers both PR-authoring workflows; `/rebuild` stays on the built-in token. See `references/release-please.md` and `references/rebuild-on-comment.md`.
+
 ## Reference files
 
 - `references/detection.md` — how to read stack + existing workflows + version state + branch model

@@ -113,6 +113,35 @@ This exact shape was verified end-to-end on a throwaway repo: a real `feat` comm
 - `python` — for Python projects, bumps `pyproject.toml`
 - `simple` — manifest-only, no language-specific version file
 
+## Config — single package, no language version file (`release-type: simple`)
+
+For a repo with **no `package.json` / `pyproject.toml`** to bump — a chezmoi/shell dotfiles repo, a config-only repo, a pile of scripts — use `release-type: "simple"`. It's the right pick whenever there's no language version file: release-please tracks the version in the manifest alone (manifest-only) and still cuts clean `vX.Y.Z` tags + GitHub releases from conventional commits.
+
+The config mirrors the verified node single-package shape above — omit `package-name`, set **both** title patterns, `include-component-in-tag: false` — only `release-type` changes:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false
+    }
+  },
+  "include-v-in-tag": true,
+  "pull-request-title-pattern": "chore: release${component} ${version}",
+  "group-pull-request-title-pattern": "chore: release${component} ${version}"
+}
+```
+
+The same two non-obvious requirements from the node block apply unchanged: **omit `package-name`** (release-please matches by path `.` instead of an unmatchable component, which would otherwise silently strand the tag) and set **both** `pull-request-title-pattern` and `group-pull-request-title-pattern` (grouped mode titles from the group pattern; a version-less title can't be parsed on merge). `${component}` renders empty for the single root package, so titles read `chore: release 0.1.2` and tags read `v0.1.2`.
+
+Seed the manifest at `0.1.0` — with no language version file to mirror, the manifest is the sole source of truth, and a `0.0.0` seed still trips the `1.0.0` first-release bootstrap (see "Manifest" below).
+
+This exact config was used for `hellatan/dotfiles` (a chezmoi-managed shell/dotfiles repo with no version file).
+
 ## Config — fullstack monorepo (frontend + backend)
 
 A monorepo tracks each package's version independently, so its tags must be **per-component** (`backend-v1.2.0`, `frontend-v1.2.0`) and each package needs its **own** release PR. This exact shape was verified end-to-end (see the note at the end of this section):
