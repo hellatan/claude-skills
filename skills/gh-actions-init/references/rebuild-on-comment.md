@@ -6,6 +6,15 @@ A ChatOps re-trigger: commenting `/rebuild` on a PR re-runs its failed CI (or ki
 
 GitHub does not fire workflows for events created by the default `GITHUB_TOKEN` (its guard against recursive Actions loops), and runs on PRs authored by `github-actions[bot]` sit in `action_required` waiting for a manual approval click. The root fix — wired in by default via the `RELEASE_PLEASE_TOKEN` PAT in `release-please.yml` and `develop-to-main-pr.yml` (see `release-please.md`) — is to author those PRs as a real user. This workflow is the universal manual fallback: re-run CI from any PR with a single comment, covering flaky runs, repos where the secret isn't set up yet, or an expired PAT.
 
+## Why `GITHUB_TOKEN` is correct here (not the PAT)
+
+Unlike `release-please.yml` and `develop-to-main-pr.yml` — which **author** PRs and so need the `RELEASE_PLEASE_TOKEN` PAT to dodge the bot-PR CI gap — this workflow stays on the built-in `GITHUB_TOKEN` **by design**. It's not a downgrade:
+
+- It re-triggers CI two ways, **both exempt from the recursion guard**. `gh run rerun` re-runs an *existing* run — reruns are not recursion-blocked. The no-prior-run fallback `gh workflow run` is a **`workflow_dispatch`** event, and per [GitHub's docs](https://docs.github.com/en/actions/concepts/workflows-and-actions/about-workflows) `workflow_dispatch` and `repository_dispatch` are the explicit **exceptions** to the rule that `GITHUB_TOKEN`-created events don't start new runs. So a `GITHUB_TOKEN`-issued `workflow_dispatch` *does* start the run.
+- A PAT here adds **no capability** — both paths already work with `GITHUB_TOKEN` — while widening blast radius (the PAT's broader scopes on a workflow any trusted commenter can fire) and burning the personal token's rate limit on every `/rebuild`.
+
+So: PAT for the two PR-**authoring** workflows, `GITHUB_TOKEN` for this **re-trigger** one. (This pre-empts the recurring "shouldn't this be the PAT too?" question — it shouldn't.)
+
 ## When to scaffold
 
 - **Default-on for gitflow repos** (those with a `develop` branch) — that's where the bot-PR flows exist.

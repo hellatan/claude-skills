@@ -16,10 +16,10 @@ permissions:
   pull-requests: write
   contents: read
 
-# To make CI run on the develop → main PR this workflow opens, give the
-# gh steps a PAT instead of GITHUB_TOKEN (bot-authored PRs don't trigger
-# workflows): add secret RELEASE_PLEASE_PAT and set
-# GH_TOKEN: ${{ secrets.RELEASE_PLEASE_PAT }} on the "Open or refresh PR" step.
+# CI runs on the develop → main PR because the gh steps below author it with
+# the RELEASE_PLEASE_TOKEN PAT instead of GITHUB_TOKEN — bot-authored PRs get no
+# CI and park in action_required. Same secret release-please.yml uses; one PAT
+# covers both. (Fall back to GITHUB_TOKEN only if you don't care about CI here.)
 
 concurrency:
   group: develop-to-main-pr
@@ -66,7 +66,7 @@ jobs:
       - name: Open or refresh PR
         if: steps.check.outputs.ahead != '0'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           existing=$(gh pr list --base main --head develop --state open --json number -q '.[0].number // empty')
           if [[ -n "$existing" ]]; then
@@ -85,7 +85,7 @@ jobs:
       - name: Close PR if no commits ahead
         if: steps.check.outputs.ahead == '0'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           existing=$(gh pr list --base main --head develop --state open --json number -q '.[0].number // empty')
           if [[ -n "$existing" ]]; then
