@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/hellatan/claude-skills/compare/v1.2.0...v1.3.0) (2026-06-12)
+
+
+### Features
+
+* **gh-actions-init:** author bot PRs with RELEASE_PLEASE_TOKEN PAT by default ([#46](https://github.com/hellatan/claude-skills/issues/46)) ([48b94cc](https://github.com/hellatan/claude-skills/commit/48b94cc3e46eec5e644df4a88b063130a8600939))
+* **release-workflow-init:** add framework-less git/release orchestrator skill ([f4212d0](https://github.com/hellatan/claude-skills/commit/f4212d0ad35621fe0be8d653657bd98dfebbb1cd))
+
+
+### Bug Fixes
+
+* **gh-actions-init:** pin release-please target-branch to main ([#44](https://github.com/hellatan/claude-skills/issues/44)) ([4dc01e9](https://github.com/hellatan/claude-skills/commit/4dc01e9f038a7d72759aba30d8f08c82fa984310))
+
 ## [1.2.0](https://github.com/hellatan/claude-skills/compare/v1.1.0...v1.2.0) (2026-06-01)
 
 
