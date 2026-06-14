@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/hellatan/claude-skills/compare/v1.3.0...v1.4.0) (2026-06-14)
+
+
+### Features
+
+* **project-scaffold:** bake always-braces ESLint rule into config references ([#52](https://github.com/hellatan/claude-skills/issues/52)) ([dd38e10](https://github.com/hellatan/claude-skills/commit/dd38e10b2bbdc7849b63f7d6e6396f3d739069a4))
+
 ## [1.3.0](https://github.com/hellatan/claude-skills/compare/v1.2.0...v1.3.0) (2026-06-12)
 
 
