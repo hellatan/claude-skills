@@ -90,6 +90,9 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
+      // Require braces on every control statement, even single-line bodies.
+      // ESLint inserts the braces (autofixable); Prettier then formats the block.
+      curly: ['error', 'all'],
     },
   },
   {

@@ -113,6 +113,9 @@ const eslintConfig = [
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // Require braces on every control statement, even single-line bodies.
+      // ESLint inserts the braces (autofixable); Prettier then formats the block.
+      curly: ['error', 'all'],
     },
   },
   {
