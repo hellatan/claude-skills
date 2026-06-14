@@ -94,6 +94,9 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
+      // Require braces on every control statement, even single-line bodies.
+      // ESLint inserts the braces (autofixable); Prettier then formats the block.
+      curly: ['error', 'all'],
     },
   },
   {
@@ -106,6 +109,23 @@ Required dev deps:
 ```bash
 npm install --save-dev eslint @eslint/js typescript-eslint eslint-config-prettier
 ```
+
+### The `curly: ['error', 'all']` rule
+
+`curly` requires braces on every control statement, even single-line bodies (`if (x) return;` → `if (x) {\n  return;\n}`). It's autofixable: ESLint inserts the braces, then Prettier formats the block across its own lines. This is an ESLint rule, **not** Prettier — Prettier has no option to add braces. A freshly scaffolded repo has no pre-existing code, so the autofix never has anything to rewrite; the rule just keeps new code consistent from commit one.
+
+### Retrofitting `curly` to an existing repo
+
+When you add `curly` to a codebase that already has brace-less control statements and run `eslint --fix`, the autofix adds braces and pushes the statement onto its own line. **This can silently delete `eslint-disable-next-line` directives.** If a directive sat directly above a brace-less `if (x) stmt;`, after the fix it lands on the new `if (x) {` line — which has no error — so with `reportUnusedDisableDirectives` on (the default in many configs) it's flagged as unused and `--fix` removes it, re-exposing the suppressed error. Relocate the directive **inside** the new braces, directly above the statement:
+
+```ts
+if (local) {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  setState(local);
+}
+```
+
+After running the curly autofix on an existing repo, re-check that no `eslint-disable-next-line` directives were stranded above a now-braced `if` (and possibly auto-removed) before committing.
 
 ### Important: ESLint config-at-cwd (monorepo gotcha)
 
