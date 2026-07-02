@@ -95,7 +95,7 @@ git branch stage origin/$default_branch
 git push -u origin stage
 ```
 
-If the user has a global pre-push hook that blocks pushing new branches (uncommon, but possible — see `project-scaffold/references/step-G-prepush-hooks.md`), surface and ask before retrying with the override env var.
+If the user has a global pre-push hook that blocks pushing new branches (uncommon, but possible — see `project-scaffold/references/step-16-prepush-hooks.md`), surface and ask before retrying with the override env var.
 
 ### 6. Apply branch protection
 

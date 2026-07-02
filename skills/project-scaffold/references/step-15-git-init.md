@@ -57,21 +57,14 @@ git checkout develop
 
 ## Why this order matters
 
-The naive order (commit first, install hooks after) bakes a trivial fixup PR into every scaffold:
-
-1. `create-next-app` (and other generators) produce files that don't satisfy the hooks (missing trailing newlines, slightly different prettier formatting, etc.).
-2. The initial commit captures these files as-is because no hooks have been installed yet.
-3. The user's first `pre-commit run` then finds dozens of "issues" the auto-fixers happily resolve — but they're now sitting as uncommitted changes on top of the initial scaffold commit.
-4. Per the bootstrap-exception contract (Step 17), the only way to land them is via a feature branch + PR.
-
-That PR adds nothing of value and is friction for every new project. Running the auto-fixers *before* the initial commit eliminates it.
+Run the auto-fixers *before* the initial commit. Generators like `create-next-app` produce files that don't satisfy the hooks (missing trailing newlines, non-prettier formatting), and the bootstrap-exception contract (Step 17) means post-commit fixes could only land via a pointless fixup PR on every new project.
 
 ## Why the version check exists
 
 `create-next-app` initializes `package.json` with `"version": "0.1.0"`, which is exactly the baseline release-please needs. The skill's framework-config step (Step 11 / `references/configs/nextjs.md`) pins it (and seeds the manifest + any `pyproject.toml` at `0.1.0` too), but a hand-edit, a non-Next generator with a different default, or a missed pin can leave the three out of sync. Two ways a mismatch bites:
 
 1. If `package.json` and `.release-please-manifest.json` disagree (one at `0.1.0`, the other at something else), release-please's very first PR generates a confusing "no changes since X" diff that lies about the project's release history before any code has shipped.
-2. If the version files are left at `0.0.0` (the old, wrong baseline), release-please bootstraps the first release to `1.0.0` regardless of commit type — the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored when the manifest is exactly `0.0.0` and no tag exists yet ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`). Seeding at `0.1.0` instead makes the first release compute as a normal bump (`feat:` → `0.2.0`, `fix:` → `0.1.1`).
+2. If the version files are left at `0.0.0` (the old, wrong baseline), release-please bootstraps the first release straight to `1.0.0` regardless of commit type. Canonical explanation + issue link: `gh-actions-init/references/release-please.md`, "Manifest — match current version".
 
 Catching the mismatch *before* the initial commit means it surfaces in 5 seconds, not after the first attempt to cut a release.
 
