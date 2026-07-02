@@ -227,6 +227,7 @@ Once confirmed, proceed through these steps without further halts (unless someth
 
 Write to repo root:
 - `CLAUDE.md` — owned by `/claude-md-init`; see its `references/templates.md`. The template includes an `@.claude/rules/git-workflow.md` reference so any Claude session on the project loads the workflow rules automatically.
+- `docs/architecture.html` — starter living system map. Write verbatim from `references/configs/architecture-doc.md` (a dependency-free, GitHub-dark HTML file: inline-SVG data-flow diagram, failure-modes table, key-files list — all shipped as clearly-marked `«placeholder»` slots). Substitute `«PROJECT_NAME»`, `«REPO»`, and `«DATE»`; leave the rest for the user to fill in as the system takes shape. The generated CLAUDE.md's Project map points at it (see `/claude-md-init`'s `references/templates.md`).
 - `.gitignore` — see `references/gitignores.md`
 - `README.md` — minimal: `# <project-name>` + one-line description placeholder
 - `.editorconfig` — see `references/configs/editorconfig.md`
@@ -387,6 +388,7 @@ These are decided. Do **not** introduce them on a scaffolded project, even when 
   - `root-package-scripts.md`, `python-dev-script.md`
   - `git-workflow-rule.md` — template for the per-repo `.claude/rules/git-workflow.md` Step 10 scaffolds
   - `styling-css-modules.md` — CSS-Modules styling convention (Step 4 default) + how the other styling choices wire up
+  - `architecture-doc.md` — the `docs/architecture.html` fill-in system-map template (Step 10) + its coordinate-grid editing guide
   - `database-drizzle.md` — opt-in Drizzle + Postgres setup (Step 4 DB question): client, migrations, `db:*` scripts, per-host connection strings
   - `auth-better-auth.md` — opt-in auth (Step 4, DB-gated): Better Auth default + Auth.js alternative, adapter wiring, schema-via-Drizzle
 - `references/explainers/concepts.md` — plain-English concept explainers
