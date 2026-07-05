@@ -19,7 +19,7 @@ Personal monorepo of Claude skills. Each skill lives under `skills/<skill-name>/
 ## Conventions
 
 - Skill folder names are lowercase, hyphenated. `name` in frontmatter must match folder name.
-- Each skill is self-contained. No shared code or references between skills — duplicate is fine.
+- Skills compose; each domain has exactly one owning skill (tests → `testing-init`, workflows/release-please → `gh-actions-init`, branches/protection → `gitflow-init`, hooks → `precommit-init`, CLAUDE.md → `claude-md-init`; `project-scaffold` and `release-workflow-init` orchestrate). Don't restate another skill's owned content — cross-reference it by path (`<skill>/references/<file>.md`). A one-line summary at the point of use is fine; a second copy of the full explanation is not.
 - `description` field in frontmatter must be "pushy" (explicit trigger contexts) so Claude invokes correctly.
 - Conventional commits required (release-please drives off them).
 - See `skills/<skill>/SKILL.md` for individual skill details.

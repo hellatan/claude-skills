@@ -19,15 +19,16 @@ npx create-next-app@latest . \
   --skip-git
 ```
 
-Flags explained:
-- `--typescript` — TypeScript out of the box
-- `--eslint` — ESLint configured
-- `--app` — App Router (the modern Next.js paradigm)
-- `--src-dir` — code lives in `src/` (cleaner separation)
-- `--import-alias "@/*"` — `@/components/Button` style imports
-- `--no-tailwind` — leave styling choice to the user (they can add Tailwind, CSS modules, styled-components, etc.)
-- `--no-turbopack` — skip Turbopack prompt; project can opt in later if desired
-- `--skip-git` — skill handles `git init` at the repo root in Step 15 (otherwise create-next-app initializes its own `.git/` and conflicts with later git-init)
+| Flag | Why |
+|---|---|
+| `--typescript` | TypeScript out of the box |
+| `--eslint` | ESLint configured |
+| `--app` | App Router (the modern Next.js paradigm) |
+| `--src-dir` | code lives in `src/` (cleaner separation) |
+| `--import-alias "@/*"` | `@/components/Button` style imports |
+| `--no-tailwind` | styling follows the Step 4 choice (CSS Modules default); omit only if the user picked Tailwind |
+| `--no-turbopack` | skip Turbopack prompt; project can opt in later |
+| `--skip-git` | Step 15 owns `git init` at repo root (avoids a nested `.git/`) |
 
 For a fullstack project where the frontend is in a subdirectory:
 
@@ -75,7 +76,7 @@ rm -rf frontend/.git frontend/CLAUDE.md
 node -e "const p=require('./package.json'); p.version='0.1.0'; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2)+'\n')"
 ```
 
-**Why `0.1.0` and not `0.0.0`:** release-please's manifest invariant (see `references/step-14-delegate.md`) requires `package.json` version == `.release-please-manifest.json` version at scaffold time. The baseline must be a normal pre-1.0 version like **`0.1.0`**, *not* `0.0.0`: when the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the **first** release to **`1.0.0`** regardless of commit type — the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options are ignored in that case. So a brand-new repo whose first release-relevant commit is a `fix:` (or even a `feat:`) silently jumps to a stable `1.0.0` on day one. This is [googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087), and we hit it live on `hellatan/getoffthecouch` (one `fix:` commit → release PR proposing `1.0.0`). Seeding at `0.1.0` makes release-please compute the first release as a normal bump from that baseline: a `feat:` → `0.2.0`, a `fix:` → `0.1.1`. (This `0.1.0` baseline + the corrected release-please config in `gh-actions-init/references/release-please.md` is the combination verified end-to-end on a throwaway repo: a `feat` produced a release PR that auto-tagged a clean `vX.Y.Z` on merge.)
+**Why `0.1.0` and not `0.0.0`:** the manifest invariant requires `package.json` == `.release-please-manifest.json` at scaffold time, seeded at a normal pre-1.0 version — an exact-`0.0.0` manifest bootstraps the first release straight to `1.0.0` regardless of commit type. Canonical explanation + issue link: `gh-actions-init/references/release-please.md`, "Manifest — match current version".
 
 Step 15 verifies this invariant before the initial commit and aborts if it's wrong, so a missed pin surfaces immediately rather than after the first release attempt.
 
@@ -88,14 +89,10 @@ After `create-next-app` runs, the skill should:
 ```bash
 npm install --save-dev \
   prettier \
-  @ianvs/prettier-plugin-sort-imports \
-  vitest \
-  @vitejs/plugin-react \
-  jsdom \
-  @testing-library/react \
-  @testing-library/jest-dom \
-  @playwright/test
+  @ianvs/prettier-plugin-sort-imports
 ```
+
+Test runners (Vitest, Playwright, Testing Library) are **not** installed here — `/testing-init` owns them and Step 14 runs it. See `testing-init/references/runners.md`.
 
 **Do NOT install** `@eslint/js`, `typescript-eslint`, or `eslint-config-prettier` — they conflict with `eslint-config-next`'s pinned versions and produce ERESOLVE errors. Next's flat config already provides everything they'd add (except `@typescript-eslint/consistent-type-imports`, which works fine when extending Next's config without those packages).
 
@@ -153,60 +150,4 @@ export default eslintConfig;
 
 **Note on `"lint"`:** Use `eslint`, not `next lint`. The `next lint` command was deprecated in Next.js 15 and **removed in Next.js 16** (the version `create-next-app` installs by default now). The ESLint flat config that Next.js scaffolds (`eslint.config.mjs`) already extends `next/core-web-vitals` + `next/typescript`, so running `eslint` directly applies all the same rules with no functional loss. `create-next-app` itself generates `"lint": "eslint"` in its scripts as of Next 16 — overriding with `"next lint"` would re-introduce a broken script.
 
-6. **Scaffold smoke-test stubs** so CI doesn't fail on first push:
-
-`src/__tests__/smoke.test.ts`:
-```typescript
-import { describe, it, expect } from 'vitest';
-
-describe('smoke', () => {
-  it('passes', () => {
-    expect(1).toBe(1);
-  });
-});
-```
-
-`e2e/smoke.spec.ts` (after `npx playwright install --with-deps`):
-```typescript
-import { test, expect } from '@playwright/test';
-
-test('homepage loads', async ({ page }) => {
-  await page.goto('/');
-  await expect(page).toHaveTitle(/.*/);
-});
-```
-
-`playwright.config.ts`:
-```typescript
-import { defineConfig } from '@playwright/test';
-
-export default defineConfig({
-  testDir: './e2e',
-  use: {
-    baseURL: 'http://localhost:3000',
-  },
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  },
-});
-```
-
-7. **Vitest config** (`vitest.config.ts`):
-```typescript
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    // Exclude Playwright e2e tests — they have their own runner
-    exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/e2e/**'],
-  },
-});
-```
-
-**Important:** without the `**/e2e/**` exclude, `npm run test` tries to run Playwright `*.spec.ts` files with Vitest and crashes. Vitest's default exclude doesn't cover `e2e/` because it's outside `__tests__/` convention.
+6. **Test stubs + runner configs are owned by `/testing-init`** (Step 14 runs its execution phase): smoke stubs, `vitest.config.ts` — including the required `**/e2e/**` exclude, without which `npm run test` crashes on Playwright specs — and `playwright.config.ts`. See `testing-init/references/test-stubs.md` and `testing-init/references/runners.md`.

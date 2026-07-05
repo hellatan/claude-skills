@@ -16,7 +16,7 @@ The `@<path>` directive tells Claude sessions to load the referenced file as add
 
 ## Conventions every template should include
 
-Add these to each template's `## Conventions` block (in addition to the stack-specific lines already shown below). They're cross-cutting and caused real breakage on past scaffolds:
+These cross-cutting conventions caused real breakage on past scaffolds. They're already baked into every template's `## Conventions` block below (with stack-appropriate wording; the env-lazy rule is omitted where nothing imports app code at build time, e.g. research) — keep them when customizing. The canonical rationale lives here, once:
 
 - **Don't write `BREAKING CHANGE:` or `feat!:` in commit-body prose unless you mean them.** Conventional-commits / release-please parsers match these patterns liberally and will inject a bogus `⚠ BREAKING CHANGES` section into the CHANGELOG. Paraphrase when referring to them ("the breaking-change footer", "the bang-suffix on `feat`").
 - **Env-reading modules must be lazy — throw on first *use*, not at module eval.** A db client / storage client / SDK initializer that throws at import time when an env var is unset will crash `next build` (and any type-check or page-data-collection step that imports it) in CI, where those env vars typically aren't set. Read the env var inside the function/route that needs it, or rely on lazy clients (e.g. `pg.Pool` doesn't connect until the first query). Applies to db clients, storage clients, and third-party SDKs (Stripe, Sentry, etc.).
@@ -136,6 +136,8 @@ Run from the repo root:
 
 - Python 3.12+ required.
 - Async-first — handlers should be `async def` unless you have a reason otherwise.
+- **Env-reading modules are lazy** — read env vars inside the function/dependency that needs them, not at import time; CI and pytest collection import modules with no prod env vars set.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required.
 ```
 
@@ -182,6 +184,8 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 - Conventional commits required.
 - TypeScript strict mode is on.
 - Imports: type imports first (sorted), then value imports (sorted).
+- **Env-reading modules are lazy** — throw on first use, not at module eval, or build/typecheck crashes in CI where env vars are unset.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 ```
 
 ---
@@ -219,6 +223,8 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 - Frontend talks to backend via `NEXT_PUBLIC_API_URL` env var.
 - API routes are versioned (`/api/v1/...`).
+- **Env-reading modules are lazy** — throw on first use, not at module eval; `next build` and pytest collection run in CI with no prod env vars set.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required.
 ```
 
@@ -258,6 +264,8 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 - Shared types live in `shared/` and are imported via `@<project>/shared`.
 - Conventional commits required.
 - TypeScript strict mode in both workspaces.
+- **Env-reading modules are lazy** — throw on first use, not at module eval, or builds/typechecks crash in CI where env vars are unset.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 ```
 
 ---
@@ -303,6 +311,7 @@ Use the matching backend template above as a starting point and:
 
 - Notebooks are named `YYYY-MM-DD_topic.ipynb`.
 - Heavy data and generated outputs are gitignored.
+- **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 ```
 
 ---

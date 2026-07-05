@@ -383,6 +383,7 @@ These are decided. Do **not** introduce them on a scaffolded project, even when 
 - `references/step-21-report-template.md` — verbatim final report + "Next steps" block
 - `references/configs/` — per-stack bootstrap config templates
   - `editorconfig.md`, `nextjs.md`, `nodejs-backend.md`, `python-fastapi.md`
+  - `node-ts.md` — shared Node/TS configs (Prettier, `.prettierignore`, ESLint notes) used by the Next.js and Fastify configs
   - `root-package-scripts.md`, `python-dev-script.md`
   - `git-workflow-rule.md` — template for the per-repo `.claude/rules/git-workflow.md` Step 10 scaffolds
   - `styling-css-modules.md` — CSS-Modules styling convention (Step 4 default) + how the other styling choices wire up
