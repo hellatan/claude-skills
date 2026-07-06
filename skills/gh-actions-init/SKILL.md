@@ -53,7 +53,7 @@ See `references/detection.md` for the detection cheat-sheet.
 
 ### 2. Pick what to add
 
-Three independent decisions:
+Five independent decisions:
 
 **a. CI structure** — lint + typecheck + format:check + build jobs.
 

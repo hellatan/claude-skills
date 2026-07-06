@@ -40,6 +40,8 @@ End the message with: *"Reply 'yes' / 'go' / 'looks good' to proceed, or tell me
    - Comment `/rebuild` on a PR to re-run failed CI; `workflow_dispatch` for manual runs
 🚀 Deploy:
    - Stub workflow created — you'll fill in deploy target later
+📐 Docs:
+   - docs/architecture.html — starter system map (fill-in SVG diagram + failure-modes table)
 🐙 GitHub:
    - <Public|Private> repo under @<user>
    - Branch protection: <applied|skipped (reason, e.g. "free tier on private repo")>

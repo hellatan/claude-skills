@@ -20,7 +20,7 @@
 pip install pre-commit  # or: uv add --dev pre-commit
 ```
 
-**Important: `pre-commit install` requires `.git/` to exist.** It writes the hook script to `.git/hooks/pre-commit`. If the skill is following Step 13 before Step 15 (git init), defer the `pre-commit install` call until after `git init`. In `project-scaffold`'s flow, Step 15 handles installation **before** the initial commit and runs the auto-fixers against the working tree once, so the initial commit lands clean (see `step-15-git-init.md`).
+**Important: `pre-commit install` requires `.git/` to exist.** It writes the hook script to `.git/hooks/pre-commit`. If the skill is following Step 13 before Step 15 (git init), defer the `pre-commit install` call until after `git init`. In `project-scaffold`'s flow, Step 15 handles installation **before** the initial commit and runs the auto-fixers against the working tree once, so the initial commit lands clean (see `project-scaffold/references/step-15-git-init.md`).
 
 ```bash
 # Run AFTER git init, BEFORE the initial commit:
