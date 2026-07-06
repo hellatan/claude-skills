@@ -11,20 +11,22 @@ Dark GitHub-style theme (CSS variables, plain CSS — never Tailwind). It contai
 3. **Two-column key files & paths list.**
 4. **Legend, an "operate it" note box, and a footer.**
 
-> Design source: `hellatan/claude-scripts` → `pinky-ingestion/docs/architecture.html` (added in
-> that repo's PR #37). This template is that file generalized: same theme, class names, and section
-> set, with every node/row/path reduced to a clearly-marked `«placeholder»` the project's real
-> components slot into.
+> Design source: generalized from a proven architecture doc that had already paid for itself on a
+> real production pipeline — same theme, class conventions, and section set, with every node, row,
+> and path reduced to a clearly-marked `«placeholder»` the project's real components slot into.
 
-## How the scaffold uses this
+## Who uses this template
 
-Step 10 of `project-scaffold` writes the HTML block below verbatim to `docs/architecture.html`,
-replacing `«PROJECT_NAME»`, `«REPO»`, and `«DATE»` (today, YYYY-MM-DD). Every other `«…»` token is
-a **fill-in placeholder** — leave them in place; the doc's own intro tells the user (or the next
-Claude session) to replace them as the system takes shape. Written for every project type
-(frontend, backend, fullstack, library, research) — the starter pipeline (entrypoint → guard →
-engine → outputs, with an inputs lane and an alerts lane) is generic enough to retheme to any of
-them.
+- **`/architecture-doc-init`** (owner) fills it in for **existing repos** — real components from
+  the codebase, real failure modes from git history. See that skill's flow.
+- **`/project-scaffold` Step 10** writes the HTML block below verbatim (blank) for **new repos**,
+  replacing only `«PROJECT_NAME»`, `«REPO»`, and `«DATE»` (today, YYYY-MM-DD). Every other `«…»`
+  token stays as a fill-in placeholder — the doc's own intro tells the user (or the next Claude
+  session) to replace them as the system takes shape.
+
+Written for every project type (frontend, backend, fullstack, library, research) — the starter
+pipeline (entrypoint → guard → engine → outputs, with an inputs lane and an alerts lane) is
+generic enough to retheme to any of them.
 
 ## Editing guide — the coordinate grid
 
