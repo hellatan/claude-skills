@@ -16,7 +16,7 @@ The `@<path>` directive tells Claude sessions to load the referenced file as add
 
 ## Architecture-doc reference (every template)
 
-When the project ships with `docs/architecture.html` (which `/project-scaffold` Step 10 writes by default — see its `references/configs/architecture-doc.md`), add this bullet to the CLAUDE.md `## Project map` section:
+When the project ships with `docs/architecture.html` (which `/project-scaffold` Step 10 writes by default, and `/architecture-doc-init` retrofits onto existing repos — template in `architecture-doc-init/references/architecture-doc-template.md`), add this bullet to the CLAUDE.md `## Project map` section:
 
 ```markdown
 - `docs/architecture.html` — living system map (open in a browser). Update it when components, flows, or failure modes change.
