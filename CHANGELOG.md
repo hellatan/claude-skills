@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/hellatan/claude-skills/compare/v1.4.0...v1.5.0) (2026-07-06)
+
+
+### Features
+
+* **project-scaffold:** scaffold docs/architecture.html living system map ([#54](https://github.com/hellatan/claude-skills/issues/54)) ([c24618c](https://github.com/hellatan/claude-skills/commit/c24618cd4bd58d290d67ceb163cd70729fd9bead))
+
 ## [1.4.0](https://github.com/hellatan/claude-skills/compare/v1.3.0...v1.4.0) (2026-06-14)
 
 
