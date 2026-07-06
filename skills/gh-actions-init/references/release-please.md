@@ -61,7 +61,7 @@ lines together if the release branch isn't `main` (rare).
 
 ## Why a PAT (`RELEASE_PLEASE_TOKEN` — required, not optional)
 
-With the default `GITHUB_TOKEN`, release-please opens its PR as `github-actions[bot]`, which breaks the release flow two ways (both confirmed live, e.g. hellatan/backtesting#31):
+With the default `GITHUB_TOKEN`, release-please opens its PR as `github-actions[bot]`, which breaks the release flow two ways (both confirmed live):
 
 1. **No CI trigger.** GitHub deliberately does **not** fire workflows for `GITHUB_TOKEN`-created events (recursion guard), so the `pull_request` CI never runs on the release PR — and with strict branch protection it can't satisfy a required check.
 2. **Manual approval gate.** Workflow runs on bot-authored PRs sit in **`action_required`** — they need a manual "Approve and run" click before CI executes. Even when CI is otherwise wired to run, the release PR never goes green on its own.
@@ -142,7 +142,7 @@ The same two non-obvious requirements from the node block apply unchanged: **omi
 
 Seed the manifest at `0.1.0` — with no language version file to mirror, the manifest is the sole source of truth, and a `0.0.0` seed still trips the `1.0.0` first-release bootstrap (see "Manifest" below).
 
-This exact config was used for `hellatan/dotfiles` (a chezmoi-managed shell/dotfiles repo with no version file).
+This exact config is verified live on a chezmoi-managed shell/dotfiles repo with no version file.
 
 ## Config — fullstack monorepo (frontend + backend)
 
@@ -194,7 +194,7 @@ The single-package fixes above do **not** transfer verbatim — the per-componen
 
 The version here **must match** the project's current version in `package.json` / `pyproject.toml`. If they diverge, release-please's first PR generates a confusing changelog.
 
-For brand-new projects (`project-scaffold` flow): start at `0.1.0` — **not `0.0.0`**. When the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the first release to `1.0.0` regardless of commit type, ignoring the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live on `hellatan/getoffthecouch`, where one `fix:` commit produced a release PR proposing `1.0.0`). Seeding the manifest + `package.json` / `pyproject.toml` at a normal pre-1.0 version like `0.1.0` sidesteps the bootstrap entirely; release-please then computes the first release as a normal bump from that baseline — a `feat:` → `0.2.0`, a `fix:` → `0.1.1`. The `0.1.0` seed paired with the corrected single-package config above is the exact combination verified end-to-end on a throwaway repo.
+For brand-new projects (`project-scaffold` flow): start at `0.1.0` — **not `0.0.0`**. When the manifest reads exactly `0.0.0` and no git tag exists yet, release-please hardcodes the first release to `1.0.0` regardless of commit type, ignoring the `bump-minor-pre-major` / `bump-patch-for-minor-pre-major` options ([googleapis/release-please#2087](https://github.com/googleapis/release-please/issues/2087); hit live — one `fix:` commit produced a release PR proposing `1.0.0`). Seeding the manifest + `package.json` / `pyproject.toml` at a normal pre-1.0 version like `0.1.0` sidesteps the bootstrap entirely; release-please then computes the first release as a normal bump from that baseline — a `feat:` → `0.2.0`, a `fix:` → `0.1.1`. The `0.1.0` seed paired with the corrected single-package config above is the exact combination verified end-to-end on a throwaway repo.
 
 For retrofitting an existing project: read the current version from the project file and use it. Don't reset it — that would lie about the project's history.
 
