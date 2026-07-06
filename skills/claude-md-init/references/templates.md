@@ -14,6 +14,16 @@ When the project ships with `.claude/rules/git-workflow.md` (which `/project-sca
 
 The `@<path>` directive tells Claude sessions to load the referenced file as additional context, so the per-repo workflow rules apply automatically without depending on the user's global agent memory. Skip this line when retrofitting a CLAUDE.md into a repo that doesn't already have the workflow rule file.
 
+## Architecture-doc reference (every template)
+
+When the project ships with `docs/architecture.html` (which `/project-scaffold` Step 10 writes by default — see its `references/configs/architecture-doc.md`), add this bullet to the CLAUDE.md `## Project map` section:
+
+```markdown
+- `docs/architecture.html` — living system map (open in a browser). Update it when components, flows, or failure modes change.
+```
+
+This makes the visual map discoverable to any contributor or Claude session working on the repo. Skip the bullet when retrofitting a CLAUDE.md into a repo that has no `docs/architecture.html`.
+
 ## Conventions every template should include
 
 These cross-cutting conventions caused real breakage on past scaffolds. They're already baked into every template's `## Conventions` block below (with stack-appropriate wording; the env-lazy rule is omitted where nothing imports app code at build time, e.g. research) — keep them when customizing. The canonical rationale lives here, once:
