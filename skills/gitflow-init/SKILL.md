@@ -41,13 +41,26 @@ default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@
 has_develop=$(git ls-remote --heads origin develop | grep -q . && echo true || echo false)
 has_stage=$(git ls-remote --heads origin stage | grep -q . && echo true || echo false)
 
-# Account plan (matters for branch protection on private repos)
-gh auth status
-gh api user --jq .plan.name 2>/dev/null
+# Branch-protection availability (matters on private repos: requires GitHub Pro).
+# Do NOT use `gh api user --jq .plan.name` — it needs the `user` token scope, which
+# the standard gh login (`gist, read:org, repo, workflow`) lacks, so it silently
+# returns null and tells you nothing. Probe the capability itself instead: a GET
+# on the protection endpoint is side-effect-free (never use PUT to probe — on paid
+# plans it would APPLY protection) and discriminates by error:
+#   403 "Upgrade to GitHub Pro"  -> free tier + private: protection unavailable
+#   404 "Branch not protected"   -> protection available, none applied yet
+#   200                          -> protection available and already applied
+protection_probe=$(gh api "repos/{owner}/{repo}/branches/${default_branch}/protection" 2>&1) && protection=applied || {
+  case "$protection_probe" in
+    *"Upgrade to GitHub Pro"*) protection=unavailable ;;
+    *"Branch not protected"*)  protection=available ;;
+    *)                         protection="unknown ($protection_probe)" ;;
+  esac
+}
 gh repo view --json visibility -q .visibility
 ```
 
-Surface findings: *"Detected: default branch `main`, no `develop`, no `stage`, repo is private on free tier — branch protection won't apply."*
+Surface findings: *"Detected: default branch `main`, no `develop`, no `stage`, repo is private and the protection probe returned 403 (free tier) — branch protection won't apply, skipping it."*
 
 ### 2. Pick scope
 
