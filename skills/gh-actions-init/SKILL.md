@@ -110,7 +110,7 @@ Same gate as `project-scaffold` and `testing-init`. Wait for explicit affirmativ
 
 ### 5. CI structure
 
-See `references/ci-structure.md` for the per-stack job templates and the extend-vs-create logic.
+See `references/ci-structure.md` for the per-stack job templates and the extend-vs-create logic. The `push` trigger is `[main]` only (never `develop`) — a PR already runs CI before merge, so a post-merge `push` run on `develop` is pure duplicate minutes. To retrofit an existing repo that still runs `push` on `develop`, see `references/ci-cost-migration.md`.
 
 Per-stack job set:
 - **Node/TS**: `lint + typecheck` job, optional `format:check` (if `prettier` is in dev deps), `build` job.
@@ -207,6 +207,7 @@ One PAT secret (`RELEASE_PLEASE_TOKEN`) covers both PR-authoring workflows; `/re
 
 - `references/detection.md` — how to read stack + existing workflows + version state + branch model
 - `references/ci-structure.md` — per-stack lint + typecheck + format:check + build jobs; extend-vs-create logic
+- `references/ci-cost-migration.md` — retrofit an existing repo to the deduplicated `push` triggers (non-breaking); notes on the separate, breaking job-consolidation change
 - `references/release-please.md` — workflow, config, manifest; monorepo variant; tag-pattern gotchas
 - `references/develop-to-main-pr.md` — `develop-to-main-pr.yml`: auto-opens/refreshes the draft `develop → main` release PR (gitflow without staging)
 - `references/rebuild-on-comment.md` — `ci-rebuild-on-comment.yml`: `/rebuild` PR-comment re-runs failed CI (gitflow); pairs with the PAT setup

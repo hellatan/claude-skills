@@ -13,7 +13,7 @@ on:
   pull_request:
     branches: [main, develop]   # adjust per branch detection
   push:
-    branches: [main, develop]
+    branches: [main]            # NOT develop — see note below
   workflow_dispatch:            # manual "rebuild now" + dispatch target for /rebuild
 
 concurrency:
@@ -60,6 +60,14 @@ jobs:
 ```
 
 Notes:
+- **`push` is `[main]` only, deliberately — not `develop`.** Every commit reaches
+  `develop` through a PR, which already runs the full suite via the `pull_request`
+  trigger. Re-running CI on the post-merge `push` to `develop` just re-tests code that
+  already passed — pure duplicate Actions minutes. `push: main` stays as a cheap
+  belt-and-suspenders re-check on the develop→main landing before a release. If the repo
+  has extra long-lived integration branches (e.g. `integration/**`), add those to the
+  `push` list too; never add `develop`. See `ci-cost-migration.md` for the measurement
+  behind this and how to retrofit an existing repo.
 - `concurrency` cancels stale runs on the same PR.
 - `build` depends on `lint-typecheck` so a broken lint doesn't waste build time.
 - `if-no-files-found: ignore` on the artifact handles different framework outputs (Next → `.next/`, Vite → `dist/`, etc.).
@@ -74,7 +82,7 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main, develop]
+    branches: [main]            # NOT develop — same rationale as the Node CI above
   workflow_dispatch:            # manual "rebuild now" + dispatch target for /rebuild
 
 concurrency:
@@ -146,7 +154,9 @@ When `ci.yml` already exists (e.g., `testing-init` ran first):
 1. **Read the existing file** — preserve indentation style, top-level keys, comments.
 2. **Identify existing job names** via `yq '.jobs | keys' .github/workflows/ci.yml` or grep fallback.
 3. **For each new job**, check if `name:` already appears (in the YAML `name:` value, NOT the YAML key — the value is what shows up as the GH Actions check name). Skip if present.
-4. **Don't change `on:` triggers** in an existing workflow. If they look stale (e.g., only `[main]` when the project also has `develop`), surface a warning, don't auto-fix.
+4. **Don't change `on:` triggers** in an existing workflow — surface a warning, don't auto-fix. Two things to check, and note they point in opposite directions:
+   - **`pull_request`** should include every branch that receives PRs (`main` + `develop`). If `develop` is missing there, PRs into develop run no CI — flag it.
+   - **`push`** should be `[main]` only (plus any long-lived integration branches). `push` including `develop` is the *duplicate-minutes* smell, not a gap — flag it for removal, don't treat `[main]`-only push as stale.
 5. **Match indentation** — read the first job in the file and match its leading-spaces level (typically 2 or 4).
 6. **Append new jobs at the end** of the `jobs:` block, separated by a blank line.
 
@@ -161,3 +171,11 @@ Each job's `name:` field is what GitHub branch protection uses as a "required st
 - (Tests come from `testing-init`: `unit tests`, `integration tests`, `e2e tests`)
 
 Don't rename these without also updating any branch protection contexts, or protection silently breaks (the new check is required but the new job isn't producing it).
+
+**Caveat — this only bites if the repo actually has required status checks.** Required
+checks come from branch protection, which is unavailable on free-tier private repos
+(the API returns 403 "Upgrade to GitHub Pro"). On such a repo there are no contexts to
+break, so a job rename is a no-op. Check the repo's plan/visibility before warning about
+a rename. Branch protection is owned by `gitflow-init` — see its
+`references/branch-protection.md` for the availability check and the 403-fallback
+message; don't reproduce that logic here.
