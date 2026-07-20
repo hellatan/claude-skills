@@ -90,7 +90,9 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main, develop]
+    branches: [main]            # NOT develop — a PR already runs CI before merge; a
+                                # post-merge push run on develop just re-tests passing
+                                # code. Matches gh-actions-init/references/ci-structure.md.
 
 concurrency:
   group: ci-${{ github.ref }}
