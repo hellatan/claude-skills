@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/hellatan/claude-skills/compare/v1.5.0...v1.5.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* **gh-actions-init,testing-init:** drop duplicate push-on-develop CI trigger ([#63](https://github.com/hellatan/claude-skills/issues/63)) ([8243149](https://github.com/hellatan/claude-skills/commit/8243149f8cca66d2ecdd27865493fece3ccccb80))
+* **gitflow-init:** probe protection endpoint instead of plan.name for tier detection ([#61](https://github.com/hellatan/claude-skills/issues/61)) ([e13cc20](https://github.com/hellatan/claude-skills/commit/e13cc2055e22fb6706955ce7c058fceb1638f211))
+
 ## [1.5.0](https://github.com/hellatan/claude-skills/compare/v1.4.0...v1.5.0) (2026-07-06)
 
 
