@@ -15,6 +15,7 @@ Personal monorepo of Claude skills. Each skill lives under `skills/<skill-name>/
 - `scripts/install.sh` — symlinks each skill into `~/.claude/skills/`
 - `scripts/validate.sh` — sanity-checks every SKILL.md (frontmatter present, name matches folder, etc.)
 - `.github/workflows/` — CI for validation + release-please
+- `docs/architecture.html` — living system map (open in a browser). Update it when components, flows, or failure modes change.
 
 ## Conventions
 

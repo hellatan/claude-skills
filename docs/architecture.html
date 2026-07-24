@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>claude-skills — Architecture</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2431;
+    --ink: #c9d1d9; --muted: #8b949e; --line: #30363d;
+    --blue: #58a6ff; --green: #3fb950; --amber: #d29922; --red: #f85149;
+    --purple: #bc8cff; --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    padding: 32px 20px 80px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -.01em; }
+  h2 { font-size: 18px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .sub { color: var(--muted); margin: 0 0 6px; }
+  code, .m { font-family: var(--mono); font-size: .9em; }
+  .m { color: var(--purple); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 16px 16px; }
+  svg { width: 100%; height: auto; display: block; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .fixed { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.35); }
+  .prog  { background: rgba(210,153,34,.15); color: var(--amber); border: 1px solid rgba(210,153,34,.4); }
+  .open  { background: rgba(248,81,73,.15); color: var(--red); border: 1px solid rgba(248,81,73,.35); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .note { background: var(--panel2); border-left: 3px solid var(--blue); border-radius: 4px; padding: 10px 14px; margin: 12px 0; color: var(--ink); font-size: 14px; }
+  ul { margin: 6px 0; padding-left: 20px; } li { margin: 3px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 44px; border-top: 1px solid var(--line); padding-top: 14px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>claude-skills — Architecture</h1>
+  <p class="sub">Monorepo of Claude Code skills: authored as <code>skills/&lt;name&gt;/SKILL.md</code>, validated in CI, released via gitflow + release-please, consumed via symlinks or the <code>ht-skills</code> plugin. Repo: <code>hellatan/claude-skills</code></p>
+  <p class="sub">Snapshot: 2026-07-20 · <b>living doc</b> — update it when components, flows, or failure modes change.</p>
+
+  <h2>Data flow</h2>
+  <div class="card">
+  <!-- =====================================================================
+       GRID (viewBox 0 0 1040 620) — keep this convention when editing:
+         · pipeline boxes centered on CENTER_X=500: wide x=330 w=340, guard x=345 w=310
+         · vertical gap between pipeline boxes = 32 (straight <line class="flow">)
+         · INPUTS lane (blue):  container x=20 w=230, inner boxes x=34 w=202 h=44
+         · ALERTS lane (purple): container x=770 w=250, text entries at x=786
+         · box text: .lc title at top+21..26, .smc subtitle ~17px below
+         · edges: .flow gray→#arw · .ok green→#arwG · .fail dashed red→#arwR
+       ✎ EDIT: add/remove pipeline steps, inputs, and alert entries as the
+         system grows.
+  ====================================================================== -->
+  <svg viewBox="0 0 1040 620" role="img" aria-label="claude-skills data flow diagram">
+    <defs>
+      <marker id="arw" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L7,3 L0,6 Z" fill="#8b949e"/>
+      </marker>
+      <marker id="arwR" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L7,3 L0,6 Z" fill="#f85149"/>
+      </marker>
+      <marker id="arwG" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L7,3 L0,6 Z" fill="#3fb950"/>
+      </marker>
+      <style>
+        .box { fill: #1c2431; stroke: #30363d; stroke-width: 1.5; }
+        .lab { fill: #c9d1d9; font: 600 14px sans-serif; }
+        .sm  { fill: #8b949e; font: 12px ui-monospace, monospace; }
+        .smc { fill: #8b949e; font: 12px ui-monospace, monospace; text-anchor: middle; }
+        .lc  { fill: #c9d1d9; font: 600 14px sans-serif; text-anchor: middle; }
+        .flow { stroke: #8b949e; stroke-width: 1.6; fill: none; }
+        .fail { stroke: #f85149; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+        .ok   { stroke: #3fb950; stroke-width: 1.6; fill: none; }
+        .guard { fill: #241c14; stroke: #d29922; stroke-width: 1.5; }
+        .engine { fill: #16241a; stroke: #3fb950; stroke-width: 1.75; }
+        .disc { fill: #201a2e; stroke: #bc8cff; stroke-width: 1.5; }
+        .inp  { fill: #131d2b; stroke: #58a6ff; stroke-width: 1.5; }
+      </style>
+    </defs>
+
+    <!-- ===== ENTRYPOINT / TRIGGER ===== -->
+    <rect x="330" y="40" width="340" height="66" rx="9" class="box"/>
+    <text x="500" y="66" class="lc">Skill authoring</text>
+    <text x="500" y="86" class="smc">skills/&lt;name&gt;/SKILL.md · branch off develop</text>
+    <line x1="500" y1="106" x2="500" y2="138" class="flow" marker-end="url(#arw)"/>
+
+    <!-- ===== GUARD / GATE (amber; may short-circuit to alerts) ===== -->
+    <rect x="345" y="140" width="310" height="46" rx="8" class="guard"/>
+    <text x="500" y="161" class="lc">Guard · validate.yml CI</text>
+    <text x="500" y="178" class="smc">validate.sh: frontmatter · name↔folder</text>
+    <path d="M655,163 C710,163 740,205 770,215" class="fail" marker-end="url(#arwR)"/>
+    <line x1="500" y1="186" x2="500" y2="218" class="flow" marker-end="url(#arw)"/>
+
+    <!-- ===== ENGINE (green; the core work) ===== -->
+    <rect x="330" y="220" width="340" height="100" rx="10" class="engine"/>
+    <text x="500" y="248" class="lc">Gitflow release train</text>
+    <text x="500" y="268" class="smc">PR → develop (CI must pass)</text>
+    <text x="500" y="288" class="smc">auto develop → main draft PR on push</text>
+    <text x="500" y="304" class="smc">release-please v5 · target-branch: main</text>
+    <path d="M670,270 C715,270 742,282 770,288" class="fail" marker-end="url(#arwR)"/>
+
+    <!-- ===== INPUTS LANE (left, blue; feeds the engine) ===== -->
+    <text x="135" y="204" class="smc">inputs</text>
+    <rect x="20" y="214" width="230" height="126" rx="10" fill="none" stroke="#30363d" stroke-dasharray="4 4"/>
+    <rect x="34" y="226" width="202" height="44" rx="7" class="inp"/>
+    <text x="135" y="246" class="lc">Conventional commits</text>
+    <text x="135" y="262" class="smc">feat:/fix: → versioning</text>
+    <rect x="34" y="282" width="202" height="44" rx="7" class="inp"/>
+    <text x="135" y="302" class="lc">Release PAT secret</text>
+    <text x="135" y="318" class="smc">authors the bot PRs</text>
+    <path d="M236,248 C285,252 300,258 328,260" class="ok" marker-end="url(#arwG)"/>
+    <path d="M236,304 C285,300 300,292 328,286" class="ok" marker-end="url(#arwG)"/>
+
+    <!-- ===== OUTPUTS ===== -->
+    <line x1="500" y1="320" x2="500" y2="352" class="flow" marker-end="url(#arw)"/>
+    <rect x="330" y="354" width="340" height="66" rx="9" class="box"/>
+    <text x="500" y="380" class="lc">Consumption</text>
+    <text x="500" y="400" class="smc">install.sh symlinks · ht-skills plugin</text>
+    <path d="M670,387 C715,387 742,382 770,380" class="ok" marker-end="url(#arwG)"/>
+
+    <!-- ===== ALERTS / NOTIFICATIONS LANE (right, purple) ===== -->
+    <rect x="770" y="140" width="250" height="280" rx="10" class="disc"/>
+    <text x="895" y="164" class="lc">CI &amp; release signals</text>
+    <text x="895" y="182" class="smc">GitHub checks · Actions tab</text>
+    <line x1="770" y1="194" x2="1020" y2="194" stroke="#30363d"/>
+    <text x="786" y="222" class="lab">⚠️ validate failed</text>
+    <text x="786" y="240" class="sm">red check on PR · /rebuild</text>
+    <text x="786" y="294" class="lab" fill="#f85149">🚨 release stuck</text>
+    <text x="786" y="312" class="sm">bot PR in action_required</text>
+    <text x="786" y="330" class="sm">check RELEASE_PLEASE_TOKEN</text>
+    <text x="786" y="386" class="lab" fill="#3fb950">✅ release cut</text>
+    <text x="786" y="404" class="sm">tag vX.Y.Z + CHANGELOG on main</text>
+
+    <!-- ===== DEPLOY / RUNTIME NOTE (full width) ===== -->
+    <rect x="20" y="460" width="1000" height="120" rx="10" class="box"/>
+    <text x="40" y="488" class="lab">Deploy model</text>
+    <text x="40" y="512" class="sm">Runs on GitHub Actions · default branch develop (gitflow) · releases cut from main (release-please v5, target-branch pinned).</text>
+    <text x="40" y="532" class="sm">Load-bearing: install.sh symlinks are live — the checked-out branch IS the installed skill; the plugin loader caches per session.</text>
+    <text x="40" y="552" class="sm">When it misbehaves: Actions tab (validate · release-please · develop→main PR) · comment /rebuild on a PR to re-run CI.</text>
+  </svg>
+  </div>
+  <div class="legend">
+    <span><i class="sw" style="background:#d29922"></i> guard / gate (may short-circuit)</span>
+    <span><i class="sw" style="background:#3fb950"></i> engine · success path</span>
+    <span><i class="sw" style="background:#bc8cff"></i> alerts / notifications</span>
+    <span><i class="sw" style="background:#58a6ff"></i> inputs</span>
+    <span><span style="color:#f85149">– – –</span> failure / skip → alert</span>
+  </div>
+
+  <h2>Known failure modes &amp; fixes</h2>
+  <!-- ✎ EDIT: add real incidents as they happen.
+       Status tags: fixed · prog (in progress) · open -->
+  <table>
+    <thead><tr><th>Symptom</th><th>Root cause</th><th>Fix</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Merges to <code>main</code> never tag a release; release-please opened its PR against <code>develop</code></td>
+        <td>release-please defaults to the repo's default branch — which is <code>develop</code> under gitflow</td>
+        <td>Pin <code>target-branch: main</code> in <code>release-please.yml</code> (#44)</td>
+        <td><span class="tag fixed">fixed</span></td>
+      </tr>
+      <tr>
+        <td>Release &amp; develop→main promo PRs stuck in <code>action_required</code>; CI never goes green on its own</td>
+        <td><code>GITHUB_TOKEN</code>-authored bot PRs get no CI runs</td>
+        <td>Author them with the <code>RELEASE_PLEASE_TOKEN</code> PAT (#46)</td>
+        <td><span class="tag fixed">fixed</span></td>
+      </tr>
+      <tr>
+        <td>A scaffolded repo's branch protection waits forever on a check that never reports</td>
+        <td>Hard-coded status-check contexts drift from the real CI job names — renaming a CI job/check is a <b>breaking change for consumer repos</b></td>
+        <td><code>gitflow-init</code> derives contexts from <code>ci.yml</code> (#16); treat check renames as breaking</td>
+        <td><span class="tag fixed">fixed</span></td>
+      </tr>
+      <tr>
+        <td>First release on a freshly scaffolded repo never auto-tags</td>
+        <td>release-please config/manifest mismatch (wrong component, <code>1.0.0</code> bootstrap)</td>
+        <td>Aligned configs with the verified single-package template (#22, #23, #24, #37)</td>
+        <td><span class="tag fixed">fixed</span></td>
+      </tr>
+      <tr>
+        <td>Every merge to <code>develop</code> runs CI twice</td>
+        <td>Scaffolded workflows fired on both <code>pull_request</code> and <code>push</code> to develop</td>
+        <td>Dropped the duplicate push-on-develop trigger (#63)</td>
+        <td><span class="tag fixed">fixed</span></td>
+      </tr>
+      <tr>
+        <td>Skill edits don't show up when running as the <code>ht-skills</code> plugin</td>
+        <td>The plugin loader caches SKILL.md content at session start</td>
+        <td>Develop via the symlink install (<code>scripts/install.sh</code>) or <code>/reload-plugins</code></td>
+        <td><span class="tag fixed">fixed</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Key files &amp; paths</h2>
+  <!-- ✎ EDIT: the files a newcomer must know to navigate the repo. -->
+  <div class="grid2">
+    <div>
+      <ul>
+        <li><span class="m">skills/&lt;skill-name&gt;/SKILL.md</span> — one skill per folder; frontmatter <code>name</code> must match the folder</li>
+        <li><span class="m">skills/&lt;skill-name&gt;/references/</span> — templates &amp; verified configs the skills write into target repos</li>
+        <li><span class="m">scripts/validate.sh</span> — SKILL.md sanity checks (the same script CI runs)</li>
+        <li><span class="m">scripts/install.sh</span> — symlinks every skill into the user's Claude skills directory</li>
+      </ul>
+    </div>
+    <div>
+      <ul>
+        <li><span class="m">.github/workflows/validate.yml</span> — CI: runs validate.sh on PRs &amp; pushes</li>
+        <li><span class="m">.github/workflows/release-please.yml</span> + <span class="m">develop-to-main-pr.yml</span> — the release train</li>
+        <li><span class="m">.claude-plugin/plugin.json</span> — <code>ht-skills</code> plugin metadata</li>
+        <li><span class="m">docs/architecture.html</span> — this file (keep it current)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Operate it:</b> <code>./scripts/validate.sh</code> before every PR ·
+    <code>./scripts/install.sh</code> to symlink skills for live development ·
+    comment <code>/rebuild</code> on a PR to re-run CI.
+    To release: merge the auto-opened develop → main PR, then merge release-please's versioned release PR (that merge tags).
+  </div>
+
+  <footer>
+    Generated as a repo artifact · open locally with <code>open docs/architecture.html</code>.
+    Reflects the system as of 2026-07-20; update alongside changes to the components it maps.
+  </footer>
+</div>
+</body>
+</html>
