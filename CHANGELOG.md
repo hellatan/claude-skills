@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.9.0](https://github.com/hellatan/ai-skills/compare/v2.8.1...v2.9.0) (2026-09-06)
+
+
+### Features
+
+* **scaffold:** pin the machine-local env file to .env across the skills ([#201](https://github.com/hellatan/ai-skills/issues/201)) ([13bf5cb](https://github.com/hellatan/ai-skills/commit/13bf5cbd622a86c6fb8e9c246c5e60dad106619f))
+
+
+### Chores
+
+* **release:** develop → main ([a4fa463](https://github.com/hellatan/ai-skills/commit/a4fa4630f9e6ff0645d07476281d1eb415fcd897))
+
+
+### Continuous Integration
+
+* add automated Claude PR review workflow ([#202](https://github.com/hellatan/ai-skills/issues/202)) ([640451a](https://github.com/hellatan/ai-skills/commit/640451a1414f9356076fbb64bf005d378cec50d5))
+
 ## [2.8.1](https://github.com/hellatan/ai-skills/compare/v2.8.0...v2.8.1) (2026-09-05)
 
 
