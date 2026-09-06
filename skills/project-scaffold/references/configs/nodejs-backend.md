@@ -49,8 +49,9 @@ npm install --save-dev \
 
 Nothing in this stack reads an env file on its own: bare `node` and `tsx` both leave
 `process.env` alone, so without a flag every `process.env.X` is `undefined` with no error.
-Node's own `--env-file` is the loader — no `dotenv` dependency needed (Node >= 20.12). `tsx`
-forwards the flag through to node, verified on tsx 4 / Node 24.
+Node's own `--env-file` is the loader — no `dotenv` dependency needed (Node >= 20.19, where
+`--env-file-if-exists` landed; `--env-file` itself goes back to 20.6). `tsx` forwards the flag
+through to node, verified on tsx 4 / Node 24.
 
 The two scripts want different behaviour, which is why the flags differ:
 
@@ -59,8 +60,9 @@ The two scripts want different behaviour, which is why the flags differ:
   copied `.env.example` yet, and the error names the exact file to create.
 - **`start` uses `--env-file-if-exists=.env`** — in production the values come from the
   platform (a container env, a systemd `EnvironmentFile=`, a host dashboard) and there is
-  usually no `.env` on disk at all. This form prints a one-line notice on stdout and
-  continues. Never use `--env-file=` here; it would make every deploy fail.
+  usually no `.env` on disk at all. This flag form prints a one-line notice on stderr and
+  continues — twice if you run it under `tsx`, which spawns a child node and lets both emit it.
+  Never use `--env-file=` here; it would make every deploy fail.
 
 Ship a committed `.env.example` whose first line names the file to create. `.env.local` is
 not a thing in this stack — Node has no notion of it.
