@@ -41,6 +41,8 @@ These cross-cutting conventions caused real breakage on past scaffolds. They're 
 - **Don't write `BREAKING CHANGE:` or `feat!:` in commit-body prose unless you mean them.** Conventional-commits / release-please parsers match these patterns liberally and will inject a bogus `⚠ BREAKING CHANGES` section into the CHANGELOG. Paraphrase when referring to them ("the breaking-change footer", "the bang-suffix on `feat`").
 - **Env-reading modules must be lazy — throw on first *use*, not at module eval.** A db client / storage client / SDK initializer that throws at import time when an env var is unset will crash `next build` (and any type-check or page-data-collection step that imports it) in CI, where those env vars typically aren't set. Read the env var inside the function/route that needs it, or rely on lazy clients (e.g. `pg.Pool` doesn't connect until the first query). Applies to db clients, storage clients, and third-party SDKs (Stripe, Sentry, etc.).
 
+- **The machine-local env file is named `.env`, never `.env.local`.** (On a *retrofit* of an existing repo, confirm which file it actually uses before writing this line — see `claude-md-init`'s Step 1. A Next-only repo on `.env.local` is following Next's own default, and the delete-it advice would destroy its working config.) It is the only name every loader in a mixed stack agrees on: Python's `python-dotenv` `load_dotenv()` reads `.env` and never `.env.local`, and drizzle-kit's bundled dotenv does the same (measured on 0.31.10: with only `.env.local` present, `DATABASE_URL` is undefined). Next.js reads `.env` too, so one name covers every entry point with no per-stack exception. ⚠️ Next.js additionally reads `.env.local` **in preference to** `.env`, so a stray `.env.local` silently outranks `.env` for the app while the db scripts and any Python process keep reading `.env` — the app and the tooling end up pointed at different databases, with nothing to warn you (`.gitignore` hides the stray from `git status`). Keep `.env.local` gitignored anyway so an old copy can never be committed, and tell people to delete theirs. Related: Next exposes `.env` to test runs but deliberately not `.env.local`, so the two names differ in what a suite sees.
+
 For frontend/Next.js templates, also include the **styling convention** matching the choice made at scaffold time (CSS Modules is the default — see `project-scaffold/references/configs/styling-css-modules.md`).
 
 ---
@@ -119,6 +121,7 @@ Run from the repo root:
 - Imports use the `@/` alias for `src/`.
 - **Styling: CSS Modules.** Co-locate a `*.module.css` per component; reference `className={styles.x}`. No inline `style={{...}}` (beyond truly dynamic values), no Tailwind utility classes. (Replace this line with the chosen styling approach if not CSS Modules.)
 - **Env-reading modules are lazy** — throw on first use, not at module eval, or `next build` crashes in CI where env vars are unset.
+- **The local env file is `.env`** (copy `.env.example` to it). Delete any `.env.local`: Next loads it *in preference to* `.env`, while drizzle-kit and every non-Next script read only `.env`, so a stray copy silently splits the app and the tooling across two databases.
 - **`typecheck` must keep its `next typegen &&` prefix.** `layout.tsx`/`page.tsx` reference globally-generated route types (`LayoutProps`, `PageProps`) that only exist once Next writes `.next/types`. Trimming the prefix passes locally (stale `.next/` on disk) and fails on CI's clean checkout with `TS2304: Cannot find name 'LayoutProps'`.
 - **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required (release-please drives off them).
@@ -160,6 +163,7 @@ Run from the repo root:
 - Python 3.12+ required.
 - Async-first — handlers should be `async def` unless you have a reason otherwise.
 - **Env-reading modules are lazy** — read env vars inside the function/dependency that needs them, not at import time; CI and pytest collection import modules with no prod env vars set.
+- **The local env file is `.env`** (copy `.env.example` to it). `python-dotenv`'s `load_dotenv()` finds `.env` and *never* `.env.local` — there is no second name that works here.
 - **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required.
 ```
@@ -200,7 +204,7 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 
 ## Environment
 
-- Required env vars are documented in `.env.example`. Copy to `.env` for local dev.
+- Required env vars are documented in `.env.example`. **Copy it to `.env`** for local dev — that exact filename; `npm run dev` passes `--env-file=.env` and exits with `node: .env: not found` until you do. `npm start` uses `--env-file-if-exists=` instead, because in production the values come from the platform and there is no file on disk. Node has no notion of `.env.local`.
 
 ## Conventions
 
@@ -247,6 +251,7 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 - Frontend talks to backend via `NEXT_PUBLIC_API_URL` env var.
 - API routes are versioned (`/api/v1/...`).
 - **Env-reading modules are lazy** — throw on first use, not at module eval; `next build` and pytest collection run in CI with no prod env vars set.
+- **The local env file is `.env` on both sides** (copy each `.env.example` to it). `python-dotenv` finds only `.env`; Next reads `.env` too but prefers a stray `.env.local` over it, so delete any `.env.local` rather than letting the two halves disagree.
 - **The frontend's `typecheck` must keep its `next typegen &&` prefix** — `layout.tsx`/`page.tsx` reference route types Next only generates into `.next/types`. Trimming it passes locally and fails on CI's clean checkout (`TS2304: Cannot find name 'LayoutProps'`).
 - **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 - Conventional commits required.
@@ -289,6 +294,7 @@ Use this only when the user explicitly opted out of the Next.js-only fullstack d
 - Conventional commits required.
 - TypeScript strict mode in both workspaces.
 - **Env-reading modules are lazy** — throw on first use, not at module eval, or builds/typechecks crash in CI where env vars are unset.
+- **The local env file is `.env`** in each workspace (copy that workspace's `.env.example` to it). Next reads env files only from its own project directory, so a repo-root `.env` is invisible to it. Delete any `.env.local`: Next loads it *in preference to* `.env`, while the backend's `--env-file=.env` and every other script read only `.env`.
 - **The frontend's `typecheck` must keep its `next typegen &&` prefix** — `layout.tsx`/`page.tsx` reference route types Next only generates into `.next/types`. Trimming it passes locally and fails on CI's clean checkout (`TS2304: Cannot find name 'LayoutProps'`).
 - **Don't write `BREAKING CHANGE:` / `feat!:` in commit-body prose** unless you mean them — parsers will corrupt the CHANGELOG. Paraphrase instead.
 ```

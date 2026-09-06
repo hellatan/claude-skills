@@ -35,6 +35,14 @@ These exclusions keep the file lean. Bloat weakens what Claude reads on every in
 
 ### 1. Detect stack
 
+> **On the env-file line specifically: report what you find, don't assert the convention.**
+> The templates below carry a `.env` convention line because that is what `/project-scaffold`
+> creates. This skill retrofits *existing* repos, and a Next-only repo using `.env.local` is
+> following Next's own documented default — it is not drift, and it is holding the developer's
+> working local config. If the repo uses `.env.local`, either say so plainly in the generated
+> CLAUDE.md or frame the `.env` line as a migration worth making, with the reason. **Never
+> generate a line telling someone to delete a file you have not confirmed is a stray.**
+
 Read these without asking:
 
 ```bash
@@ -58,6 +66,10 @@ python3 -c "import tomllib; d=tomllib.load(open('pyproject.toml','rb')); print('
 
 # No manifest at all -> toolbox/scripts repo (shell tools, editor-pasted sources, declarative config)
 [[ -z $stack_node && -z $stack_python ]] && stack_toolbox=true
+
+# Env-file convention ACTUALLY in use (do not assume — see the note below)
+ls -a .env .env.local .env.example */.env */.env.local */.env.example 2>/dev/null
+grep -rn -- "--env-file\|env-file-if-exists\|dotenv" package.json */package.json *.config.* 2>/dev/null
 ```
 
 ### 2. Handle existing CLAUDE.md
