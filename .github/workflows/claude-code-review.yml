@@ -1,12 +1,14 @@
 name: claude-code-review
 
-# This repo is PUBLIC, so the trigger choice is a security decision:
-# `pull_request` runs in the CONTEXT OF THE FORK for a fork PR — read-only
-# token, no repository secrets — so a fork PR simply can't reach
-# CLAUDE_CODE_OAUTH_TOKEN. `pull_request_target` would run in the BASE repo's
-# context with secrets and write permissions while the PR's code is untrusted,
-# which is the classic token-exfiltration hole. Never switch this to
-# pull_request_target.
+# This repo is PUBLIC, so the trigger choice is a security decision.
+# On a fork PR, `pull_request` hands the job a read-only GITHUB_TOKEN and NO
+# repository secrets, so the PR's code can never reach
+# CLAUDE_CODE_OAUTH_TOKEN. (The run itself still belongs to this repo — the
+# workflow file and the runner are ours; what the fork loses is the token's
+# write scopes and every secret.) `pull_request_target` would hand the job the
+# base repo's secrets AND write permissions while the code under review is
+# untrusted, which is the classic token-exfiltration hole. Never switch this
+# to pull_request_target.
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
