@@ -61,7 +61,7 @@ Note: the plugin loader caches `SKILL.md` content at session start. Use `/reload
 
 1. Branch off `develop`: `git checkout -b feat/<skill-name>`
 2. Create `skills/<skill-name>/SKILL.md` (see Anthropic conventions in `CLAUDE.md`)
-3. Run `./scripts/validate.sh` to confirm the SKILL.md is well-formed
+3. Run `npm test` (`./scripts/validate.sh` + the reference-step suite) to confirm the SKILL.md is well-formed
 4. Run `./scripts/install.sh` to symlink it locally
 5. Test with Claude Code
 6. Commit with `feat: add <skill-name> skill`, open PR to develop
@@ -69,6 +69,20 @@ Note: the plugin loader caches `SKILL.md` content at session start. Use `/reload
 ## Updating an existing skill
 
 Edit in place under `skills/<skill-name>/`. Symlink is already live, so changes show up immediately. Commit with `fix:` (bugfix) or `feat:` (new behavior).
+
+## Checks
+
+```bash
+npm test                    # everything CI runs
+npm run validate            # skill structure (scripts/validate.sh)
+npm run test:release-steps  # executes the release-verification step embedded in Markdown
+```
+
+No npm dependencies — the scripts are bash + `python3`. `test:release-steps` additionally needs **PyYAML**, `jq`, `git`, `curl`, `tar` and **ShellCheck** on the machine; `actionlint` is fetched at a pinned, checksum-verified version into a gitignored `.cache/`.
+
+It covers one step in one file — the `Evaluate release outcome` step in
+[`skills/gh-actions-init/references/release-verification.md`](skills/gh-actions-init/references/release-verification.md)
+— which is shell inside YAML inside Markdown, so neither `validate.sh` nor actionlint ever executed it, and it drifted. Every other reference file's runnable blocks are still unexecuted. See [`tests/release-steps/README.md`](tests/release-steps/README.md).
 
 ## Plugin publishing
 

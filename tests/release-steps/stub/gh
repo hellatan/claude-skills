@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# Stubbed `gh` for the release-step harness. Put first on PATH by run_cases.py.
+#
+# It MODELS the world rather than hand-writing the answer: the freeze query's
+# filters are parsed and honoured, so a step that drops `--state merged` or the
+# `autorelease: pending` label gets a different (wrong) result, the way it would
+# against real GitHub. A stub that returned `$STUB_PRLIST` regardless of the
+# arguments would supply the very answer the query is supposed to earn.
+#
+# The modelled world always contains:
+#   #99  an OPEN, `autorelease: pending` release PR   (the NORMAL resting state)
+#   #77  a merged PR carrying no release label
+# plus, when STUB_PRLIST names one, a MERGED, still-pending PR — the freeze proof.
+#
+# Env:
+#   STUB_PRLIST      ok:<n> | ok: | fail | stderr-ok:<n> | fail-eof | fail-huge | flaky2:<n>
+#   STUB_MAIN        ok:<sha><TAB><subj> | stderr-ok:<sha><TAB><subj> | flaky2:<sha><TAB><subj> | fail
+#   STUB_TAGS_FOUND  space-separated tags that exist on the "remote"
+#   STUB_TAG_FLAKY   space-separated tags that 404 on attempts 1-2, then resolve
+set -u
+
+OPEN_PENDING_PR=99
+UNLABELLED_MERGED_PR=77
+
+# Real gh refuses to talk to the API unauthenticated. Without this, dropping
+# `GH_TOKEN` from the step's env: block would be invisible to every case.
+if [ -z "${GH_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
+  echo "gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable." >&2
+  exit 4
+fi
+
+case "${1:-}" in
+  pr)
+    [ "${2:-}" = "list" ] || { echo "stub gh: unhandled 'gh pr ${2:-}'" >&2; exit 2; }
+    state="" label=""
+    shift 2
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --state) state="${2:-}"; shift 2 ;;
+        --label) label="${2:-}"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    # An unfiltered / mis-filtered query matches PRs the freeze proof must not
+    # include — which is exactly how a healthy repo starts reporting frozen.
+    if [ "$label" != "autorelease: pending" ]; then
+      printf '%s\n' "$UNLABELLED_MERGED_PR"
+      exit 0
+    fi
+    if [ "$state" != "merged" ]; then
+      printf '%s\n' "$OPEN_PENDING_PR"
+      exit 0
+    fi
+
+    case "${STUB_PRLIST:-ok:}" in
+      fail)
+        echo "gh: HTTP 502 Bad Gateway (stubbed failure)" >&2
+        exit 1
+        ;;
+      fail-eof)
+        # stderr carrying a bare `EOF` line — a fixed heredoc delimiter in
+        # $GITHUB_OUTPUT truncates the value here and spills unparsable lines.
+        printf 'gh: HTTP 502 Bad Gateway (stubbed failure)\nEOF\ntrailing\n' >&2
+        exit 1
+        ;;
+      fail-huge)
+        # Discord rejects an embed description over 4096 chars; the step has to
+        # truncate gh's stderr rather than pass it through.
+        head -c 9000 /dev/zero | tr '\0' 'x' >&2
+        echo >&2
+        exit 1
+        ;;
+      flaky2:*)
+        # Fails twice, then succeeds — proves the retry loop is a retry loop.
+        n_file="${RUNNER_TEMP:-/tmp}/stub-gh-prlist.n"
+        n=$(cat "$n_file" 2>/dev/null || echo 0)
+        n=$((n + 1))
+        echo "$n" >"$n_file"
+        if [ "$n" -lt 3 ]; then
+          echo "gh: transient 502 (stubbed)" >&2
+          exit 1
+        fi
+        printf '%s\n' "${STUB_PRLIST#flaky2:}"
+        exit 0
+        ;;
+      stderr-ok:*)
+        # A SUCCESSFUL call that still writes to stderr. `2>&1` here would make
+        # the advisory the value and turn a healthy repo "frozen".
+        echo "gh: a new release of gh is available (advisory)" >&2
+        printf '%s\n' "${STUB_PRLIST#stderr-ok:}"
+        exit 0
+        ;;
+      ok:*)
+        printf '%s\n' "${STUB_PRLIST#ok:}"
+        exit 0
+        ;;
+      *)
+        echo "stub gh: bad STUB_PRLIST=${STUB_PRLIST:-}" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  api)
+    url="${2:-}"
+    case "$url" in
+      */commits/main)
+        case "${STUB_MAIN:-fail}" in
+          fail)
+            echo "gh: Not Found (stubbed failure)" >&2
+            exit 1
+            ;;
+          stderr-ok:*)
+            echo "gh: a new release of gh is available (advisory)" >&2
+            printf '%s\n' "${STUB_MAIN#stderr-ok:}"
+            exit 0
+            ;;
+          flaky2:*)
+            n_file="${RUNNER_TEMP:-/tmp}/stub-gh-main.n"
+            n=$(cat "$n_file" 2>/dev/null || echo 0)
+            n=$((n + 1))
+            echo "$n" >"$n_file"
+            if [ "$n" -lt 3 ]; then
+              echo "gh: transient 502 (stubbed)" >&2
+              exit 1
+            fi
+            printf '%s\n' "${STUB_MAIN#flaky2:}"
+            exit 0
+            ;;
+          ok:*)
+            printf '%s\n' "${STUB_MAIN#ok:}"
+            exit 0
+            ;;
+          *)
+            echo "stub gh: bad STUB_MAIN=${STUB_MAIN:-}" >&2
+            exit 2
+            ;;
+        esac
+        ;;
+      */git/ref/tags/*)
+        tag="${url##*/git/ref/tags/}"
+        for t in ${STUB_TAG_FLAKY:-}; do
+          if [ "$t" = "$tag" ]; then
+            # Ref propagation lag: 404 twice, then resolve. A single-attempt
+            # lookup manufactures the false alarm the retry loop exists to stop.
+            n_file="${RUNNER_TEMP:-/tmp}/stub-gh-tag-${tag}.n"
+            n=$(cat "$n_file" 2>/dev/null || echo 0)
+            n=$((n + 1))
+            echo "$n" >"$n_file"
+            if [ "$n" -lt 3 ]; then
+              echo "gh: Not Found (tag ${tag} has not propagated)" >&2
+              exit 1
+            fi
+            printf '{"ref":"refs/tags/%s"}\n' "$tag"
+            exit 0
+          fi
+        done
+        for t in ${STUB_TAGS_FOUND:-}; do
+          if [ "$t" = "$tag" ]; then
+            printf '{"ref":"refs/tags/%s"}\n' "$tag"
+            exit 0
+          fi
+        done
+        echo "gh: Not Found (tag ${tag})" >&2
+        exit 1
+        ;;
+    esac
+    echo "stub gh: unhandled 'gh api ${url}'" >&2
+    exit 2
+    ;;
+esac
+
+echo "stub gh: unhandled 'gh $*'" >&2
+exit 2

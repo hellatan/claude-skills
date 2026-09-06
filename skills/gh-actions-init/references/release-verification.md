@@ -581,6 +581,20 @@ gh run view <run-id> -R <owner>/<repo> --log | grep -E 'alert delivered|skipping
 
 `alert delivered` only prints on a 2xx from Discord. `skipping alert` means the secret is empty. A green checkmark on its own tells you nothing.
 
+## This file is executed, not just read
+
+The `Evaluate release outcome` step above is shell inside YAML inside Markdown, which means neither `scripts/validate.sh` (skill structure) nor actionlint (workflows only) ever looked at it — and it drifted behind the workflows it is canonical *for*, shipping a freeze detector that could not fire on a `workflow_dispatch`.
+
+It is now run on every PR by the CI of the `ai-skills` repo that owns this file (the command below exists there, not in a scaffolded repo):
+
+```bash
+npm run test:release-steps
+```
+
+That extracts this step straight out of this file — `run:`, `env:` and all — stubs `gh` and `sleep` on `PATH`, drives cases over the event/state cross product (`workflow_dispatch` with no `head_commit` × healthy/frozen/…, `push` × freeze/tagged/missing-tag/…), asserts the emitted `alert` / `released` / `commit_sha`, then breaks one behaviour at a time and requires the matching cases to go red. The stubbed `gh` honours the freeze query's `--state merged` and label filters rather than returning a fixed answer, so dropping either is caught. It also runs pinned actionlint + `bash -n` over every fenced `yaml` block here (the ```` ```bash ```` blocks are not covered), checks that the alert step still reads the outputs this step writes, and repeats each check on a deliberately broken copy so a "clean" result cannot come from a linter that looked at nothing.
+
+**Editing the step above means running that suite** — and adding a case for whatever the edit is for. `tests/release-steps/README.md` covers how. `--target` takes a real workflow too, so a downstream `release-please.yml` can be driven through the identical cases to see whether it still agrees with this file.
+
 ## Activation timing (gitflow)
 
 - `release-health.yml` runs on `schedule` / `workflow_dispatch`, which execute from the **default branch** — so it's live as soon as it lands on `develop`. Self-test it immediately: `gh workflow run release-health.yml -R <owner>/<repo> -f test_alert=true`.
