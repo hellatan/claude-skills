@@ -246,6 +246,7 @@ Write to repo root:
 - `.gitignore` — see `references/gitignores.md`
 - `README.md` — minimal: `# <project-name>` + one-line description placeholder
 - `.editorconfig` — see `references/configs/editorconfig.md`
+- `.env.example` — whenever the project reads **any** env var (a database, auth, an API base URL). First line must name the file to create — ``# Copy this file to `.env` and fill it in.`` It is the only committed artifact that pins the filename, so a project that reads env and ships no template leaves every later session guessing. The `.gitignore` template already keeps it un-ignored via `!.env.example`. **In a `frontend/` + `backend/` layout, write one per side, next to that side's entry point — never a single one at the repo root.** Next.js only reads env files inside the Next project directory and never walks up to a parent, while `python-dotenv`'s `find_dotenv()` *does* walk up — so a lone root `.env` is read by the backend and invisible to the frontend, which is the same two-sources-of-truth split this convention exists to prevent, relocated from the filename to the path.
 - `.pre-commit-config.yaml` — owned by `/precommit-init`; see its `references/precommit-config.md`
 - `.claude/rules/git-workflow.md` — per-repo workflow rules (worktree usage, branch off `develop`, refspec push pattern, draft PRs, release-please flow). Verbatim copy of the template content in `references/configs/git-workflow-rule.md`. The whole skill assumes this workflow; scaffolding the rule into the repo makes it discoverable to anyone (or any Claude session) working on the project later, without requiring global agent memory.
 
@@ -383,6 +384,7 @@ These are decided. Do **not** introduce them on a scaffolded project, even when 
 - **No Make / justfile / taskfile.** Canonical commands run through npm — `npm <command>` / `npm run <command>` (e.g. `npm run check:all`, `npm run lint`, `npm run db:migrate`): cross-platform and discoverable via `npm run`. (Python-only repos with no npm use `scripts/dev.py`.) Don't wrap npm scripts in a Makefile — that's the inverse of the user's "expose tools as npm scripts" preference.
 - **No Biome.** ESLint (flat config) + Prettier are canonical for JS/TS lint + format. Biome is a JS/TS-only ESLint+Prettier replacement — it is **not** a polyglot or Python tool, so it solves nothing the defaults don't already cover.
 - **Ruff is canonical for Python** lint + format (Biome has no Python support). This is the Python analog people sometimes confuse Biome for.
+- **No `.env.local`.** The machine-local env file is `.env`, full stop. It is the only name every loader agrees on: `python-dotenv`'s `load_dotenv()` and drizzle-kit's bundled dotenv read `.env` and cannot see `.env.local`, while Next.js reads `.env` as well. Next *also* reads `.env.local` and prefers it, so a second file does not add a layer — it silently splits the app off from every script and every Python process. Never scaffold a `dotenv -e .env.local -e .env` chain to bridge the two. `.env.local` stays gitignored so an old copy can never be committed.
 
 ## Reference files
 

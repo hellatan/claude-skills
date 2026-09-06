@@ -18,7 +18,10 @@ Thumbs.db
 *.swo
 *~
 
-# Env (.env.example IS committed — keep the negation even if a blanket .env* rule is added)
+# Env. The machine-local file is `.env` — never `.env.local`, which python-dotenv and
+# drizzle-kit cannot see and Next.js loads in preference to `.env`. `.env.local` stays
+# listed anyway so an old stray copy can never be committed.
+# (.env.example IS committed — keep the negation even if a blanket .env* rule is added)
 .env
 .env.local
 .env.*.local
