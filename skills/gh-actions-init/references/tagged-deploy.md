@@ -40,7 +40,7 @@ Render: `autoDeploy: false` in `render.yaml`.
 
 Not a separate `deploy.yml` on `on: push: tags` — see the loop-guard gotcha below. The step runs in the **same job** that cut the tag and keys off the `released` output from the `verify-tag` steps (`references/release-verification.md`), which is `true` only when a tag was cut **and** the ref was confirmed on the remote.
 
-`github.sha` on that run **is** the commit release-please just tagged, so passing it as the deploy ref guarantees the platform builds the tagged commit and never the untagged promotion merge.
+Deploy the `deploy_sha` output from those same steps — the commit the **verified tag** points at, resolved from the tag itself. Do **not** deploy `github.sha`: it is the tagged commit only on a `push` to the release branch. On a `workflow_dispatch` (the standard way to re-fire a release-please run that died transiently) it is the tip of the *dispatched* ref, which `gitflow-init` makes `develop` — so a dispatch that recovers a stuck release would ship develop's tip to production as if it were the release, migrations and all. `deploy_sha` is empty unless a tag was verified, so every deploy step below refuses to fire on an empty value rather than falling back to something plausible.
 
 The step is additionally gated on a repo variable, `RENDER_DEPLOY`, so a repo that has release automation but **no service yet** doesn't fail its releases — see "Repos with no deploy target yet" below. That gate is about *whether this repo deploys at all*; it never softens the failure when a repo that **does** deploy is missing its credential.
 
@@ -178,8 +178,12 @@ concurrency:
   if: ${{ steps.check.outputs.released == 'true' && vars.RENDER_STAGE_DEPLOY != 'false' }}
   env:
     RENDER_STAGE_DEPLOY_HOOK_URL: ${{ secrets.RENDER_STAGE_DEPLOY_HOOK_URL }}
-    SHA: ${{ github.sha }}
+    SHA: ${{ steps.check.outputs.deploy_sha }}
   run: |
+    if [ -z "$SHA" ]; then
+      echo "::error::A pre-release tag was verified but its commit SHA could not be resolved — refusing to deploy rather than shipping the wrong commit."
+      exit 1
+    fi
     if [ -z "$RENDER_STAGE_DEPLOY_HOOK_URL" ]; then
       echo "::error::RENDER_STAGE_DEPLOY_HOOK_URL secret is unset — a pre-release was tagged but staging cannot be deployed. If this repo has no staging service yet, set the repo variable RENDER_STAGE_DEPLOY=false instead."
       exit 1
@@ -239,9 +243,10 @@ Appended to the `release-please` job in `.github/workflows/release-please.yml`, 
 ```yaml
 # Production deploy — the ONLY thing that ships prod (render.yaml has
 # autoDeploy: false). Fires only when this run cut a VERIFIED tag, and deploys
-# github.sha, which IS the commit release-please just tagged (the release PR's
-# merge commit). So the platform always builds the exact tagged version, never
-# the untagged promotion-merge commit.
+# the commit that VERIFIED TAG points at (steps.check.outputs.deploy_sha),
+# never github.sha — see "the deploy ref" above. So the platform always builds
+# the exact tagged version, never the untagged promotion-merge commit and
+# never the ref a manual dispatch happened to run from.
 #
 # OPT-OUT SWITCH: set the repo variable RENDER_DEPLOY=false when this repo has
 # NO deploy target yet (no service, therefore no deploy hook to configure) —
@@ -257,8 +262,12 @@ Appended to the `release-please` job in `.github/workflows/release-please.yml`, 
   if: ${{ steps.check.outputs.released == 'true' && vars.RENDER_DEPLOY != 'false' }}
   env:
     RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-    SHA: ${{ github.sha }}
+    SHA: ${{ steps.check.outputs.deploy_sha }}
   run: |
+    if [ -z "$SHA" ]; then
+      echo "::error::A tag was verified but its commit SHA could not be resolved — refusing to deploy rather than shipping the wrong commit."
+      exit 1
+    fi
     if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
       echo "::error::RENDER_DEPLOY_HOOK_URL secret is unset — a release was tagged but production cannot be deployed. Add the deploy hook URL (dashboard → service → Settings → Deploy Hook) as a repo secret. If this repo has no deploy target yet, set the repo variable RENDER_DEPLOY=false instead."
       exit 1
@@ -636,8 +645,12 @@ Same branch-auto-deploy problem, same fix shape, **one important difference**: V
 #       echo "::error::VERCEL_TOKEN is unset — a release was tagged but production cannot be deployed."
 #       exit 1
 #     fi
-#     # github.sha is already checked out by actions/checkout in this job, and IS
-#     # the tagged commit — the build below is of the tagged tree.
+#     # ⚠️ This builds the CHECKED-OUT tree, not steps.check.outputs.deploy_sha.
+#     # actions/checkout takes github.sha, which is the tagged commit only on a
+#     # `push` to the release branch — on a workflow_dispatch it is the
+#     # dispatched ref. Any build-then-upload target must check out
+#     # steps.check.outputs.deploy_sha explicitly (actions/checkout `ref:`)
+#     # before building, or it can ship the wrong tree.
 #     npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 #     npx vercel build --prod --token="$VERCEL_TOKEN"
 #     npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
