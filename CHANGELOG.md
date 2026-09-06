@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.9.1](https://github.com/hellatan/ai-skills/compare/v2.9.0...v2.9.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **project-scaffold:** correct --env-file notice stream and Node floor ([#205](https://github.com/hellatan/ai-skills/issues/205)) ([7bedbcd](https://github.com/hellatan/ai-skills/commit/7bedbcd15aa0dd77ea10806369cd5afc38bdbfd5))
+
+
+### Chores
+
+* **release:** develop → main ([c08419e](https://github.com/hellatan/ai-skills/commit/c08419ec4a8bb560b35f2069ebca16e9b1107fab))
+
 ## [2.9.0](https://github.com/hellatan/ai-skills/compare/v2.8.1...v2.9.0) (2026-09-06)
 
 
