@@ -83,12 +83,31 @@ export const selectExampleSchema = createSelectSchema(examples);
 
 ## `.env.example` (committed) + connection strings
 
-Add to the committed `.env.example`:
+Add to the committed `.env.example`, and give it a header that names the file to create:
 
 ```
+# Copy this file to `.env` — that exact name. drizzle-kit reads `.env` and nothing else.
+
 # Postgres connection string. Use a POOLED URL behind a transaction pooler in prod.
 DATABASE_URL=
 ```
+
+**The local file must be named `.env`, never `.env.local`.** `drizzle.config.ts` reads
+`process.env.DATABASE_URL` with no loader of its own, and drizzle-kit supplies one: it bundles
+dotenv and loads **`.env`**. It does not look at `.env.local`. Measured on drizzle-kit 0.31.10
+with the config above:
+
+| Files present | `process.env.DATABASE_URL` inside `drizzle.config.ts` |
+|---|---|
+| `.env` only | loaded |
+| `.env.local` only | **undefined** |
+| both | the value from `.env` |
+
+Next.js, meanwhile, reads `.env` *and* `.env.local`, preferring `.env.local`. So in a Next +
+Drizzle repo a stray `.env.local` is the worst case: the app runs fine against it while
+`db:push` / `db:migrate` / `db:studio` read a different `.env` — or fail outright with an
+undefined URL. Keep `.env.local` gitignored (an old copy must never become committable) and
+say to delete it; do not add a `dotenv -e .env.local -e .env` wrapper to paper over it.
 
 Per-host guidance — seed the comment for the host the user picked:
 

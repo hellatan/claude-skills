@@ -30,6 +30,7 @@ requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.32",
+  "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]
@@ -108,6 +109,37 @@ markers = [
 
 ---
 
+## Environment — the file is `.env`
+
+`python-dotenv` is the loader, and **`load_dotenv()` finds `.env` and nothing else** — it has no
+notion of `.env.local`. That is why `.env` is the filename for every project this skill
+scaffolds, including the ones with a Next.js frontend: Next reads `.env` too, so one name covers
+both halves with no per-stack exception. (Next *also* reads `.env.local`, and prefers it — which
+is exactly why a stray `.env.local` is dangerous in a fullstack repo: the frontend would use it
+while Python could not see it at all.)
+
+Commit a `.env.example` whose first line names the file to create, and keep the real file
+gitignored (`gitignores.md` already has the `!.env.example` negation that keeps the template
+committed):
+
+```
+# Copy this file to `.env` and fill it in.
+API_BASE_URL=
+```
+
+(Seed it with the vars this service actually reads. In a fullstack scaffold the database lives
+on the frontend side with Drizzle, so `DATABASE_URL` usually does **not** belong here.)
+
+Call `load_dotenv()` once at the top of `main.py`. The scaffolded entry point is
+`uvicorn <package_name>.main:app`, so there is no `__main__` block — `main.py`'s module scope
+*is* the process boundary. This does not violate the repo's lazy-env convention: that rule is
+about modules that **throw** at import when a var is unset, and `load_dotenv()` never throws —
+it returns `False` when the file is absent and moves on.
+
+For a containerized or systemd deployment the values come from the platform (an
+`EnvironmentFile=`, a dashboard), not from this file. The same call is still correct there:
+`load_dotenv()` does not overwrite an env var that is already set.
+
 ## Stub source files
 
 `<package_name>/__init__.py` (empty file, just makes it a package):
@@ -118,7 +150,12 @@ markers = [
 ```python
 """FastAPI application entry point."""
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
+
+# Reads `.env` (never `.env.local` — python-dotenv has no such concept). No-op when the
+# file is absent, and never overrides a var the platform already set.
+load_dotenv()
 
 app = FastAPI(title="<project_name>")
 

@@ -29,9 +29,9 @@ npm install --save-dev \
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node --env-file-if-exists=.env dist/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -44,6 +44,26 @@ npm install --save-dev \
   }
 }
 ```
+
+## Environment — the file is `.env`
+
+Nothing in this stack reads an env file on its own: bare `node` and `tsx` both leave
+`process.env` alone, so without a flag every `process.env.X` is `undefined` with no error.
+Node's own `--env-file` is the loader — no `dotenv` dependency needed (Node >= 20.12). `tsx`
+forwards the flag through to node, verified on tsx 4 / Node 24.
+
+The two scripts want different behaviour, which is why the flags differ:
+
+- **`dev` uses `--env-file=.env`** — it *hard-errors* (`node: .env: not found`, non-zero exit)
+  when the file is missing. That is the right failure for local dev: the developer has not
+  copied `.env.example` yet, and the error names the exact file to create.
+- **`start` uses `--env-file-if-exists=.env`** — in production the values come from the
+  platform (a container env, a systemd `EnvironmentFile=`, a host dashboard) and there is
+  usually no `.env` on disk at all. This form prints a one-line notice on stdout and
+  continues. Never use `--env-file=` here; it would make every deploy fail.
+
+Ship a committed `.env.example` whose first line names the file to create. `.env.local` is
+not a thing in this stack — Node has no notion of it.
 
 ## `tsconfig.json`
 
