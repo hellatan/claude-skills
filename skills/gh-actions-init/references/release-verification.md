@@ -50,6 +50,15 @@ These steps go on the **same** `release-please` job (reusing its runner — no e
     # from steps.release.outputs.release_created / .tag_name — see the
     # namespaced-outputs trap below.
     OUTPUTS_JSON: ${{ toJSON(steps.release.outputs) }}
+    # ⚠️ CORRECT ONLY WHILE THIS WORKFLOW'S SOLE TRIGGER IS `on: push`.
+    # `github.event.head_commit` is null on any event that has no head commit
+    # (workflow_dispatch, schedule, …). HEAD_MSG then reads empty,
+    # is_release_merge stays false, and EVERY detection branch below becomes
+    # unreachable dead code — a green run on the exact silent freeze this step
+    # exists to catch. This has happened in practice: a repo added
+    # `workflow_dispatch:` here as a manual re-fire and made the freeze detector
+    # decorative in the same commit. If you add ANY non-push trigger, replace
+    # this whole step with the drop-in below ("Adding workflow_dispatch").
     HEAD_MSG: ${{ github.event.head_commit.message }}
     REPO: ${{ github.repository }}
     GH_TOKEN: ${{ github.token }}
@@ -180,6 +189,230 @@ Hence the optional component group and the full `X.Y.Z` anchor:
 ```
 
 Requiring all three version parts is what keeps the optional group from swallowing ordinary commits — `chore: release notes cleanup` must not match. Verified against real release commits in both shapes, plus non-release subjects.
+
+### ⚠️ This step is correct **only** while the workflow's sole trigger is `push`
+
+`github.event.head_commit` is populated on `push` and on nothing else. Add `workflow_dispatch:` (or `schedule:`, or any other event) to `release-please.yml` and, on those runs, `head_commit` is **null** — so `HEAD_MSG` is empty, `head_line` is empty, `is_release_merge` stays `false`, and the `is_release_merge && -z tags` branch becomes **unreachable dead code**. The run is green. The silent freeze it exists to catch goes unreported.
+
+This is not hypothetical. A repo added `workflow_dispatch:` to this exact workflow as a **manual re-fire** — the sane, obviously-correct thing to want, since a transient release-please failure otherwise has no recovery path but `gh run rerun`. The trigger shipped; the freeze detector became decorative in the same commit; nothing failed, so nothing surfaced it.
+
+The bug and the reason for it are one edit apart, and the reason lives here rather than in `release-please.yml`, which is why the trigger looks free to add. If you add any non-push trigger, replace the whole `Evaluate release outcome` step with the version below.
+
+### Adding `workflow_dispatch` — the drop-in replacement steps
+
+> ### 🛑 Prerequisite: not on a workflow that carries the deploy step
+>
+> `references/tagged-deploy.md`'s `Deploy tagged release` step is gated on this file's `released` output and deploys **`github.sha`**. On a `workflow_dispatch` run `github.sha` is the tip of the **dispatched ref** — `develop` in a gitflow repo, since a dispatch defaults to the repo's default branch — while `target-branch: main` means release-please still tags `main`. And `released=true` **is** reachable on a dispatch: re-firing a stuck release is the whole point of the trigger, and that re-fire can cut and confirm the tag.
+>
+> So on a repo that has both, adding `workflow_dispatch:` means: dispatch → tag `v1.2.4` cut on `main` → `released=true` → **the deploy hook ships `develop`'s tip to production**, on a green run.
+>
+> The `commit_sha` output below does **not** fix this — it resolves main's tip only on the frozen path, and a tag-cutting dispatch doesn't take that path. Deploy-safe dispatch needs its own main-resolved sha for the deploy step, which is not scaffolded here.
+>
+> **Therefore:** add `workflow_dispatch` only to a `release-please.yml` with **no** deploy step (`vars.RENDER_DEPLOY=false` is *not* sufficient — it can be flipped on later from the settings UI with no file change). If the repo deploys, recover a stuck release with `gh run rerun <database-id>` instead, which replays the original `push` event and keeps `head_commit` populated.
+
+This replaces `Evaluate release outcome` **and** `Alert on failure` — both are in the fence below, so copy it whole rather than hand-assembling from a diff. Three earlier attempts at this fallback each shipped a *different* defect, and every one of them was a green run on a frozen release:
+
+1. **Read main's tip commit and use its subject.** Inverts the detector. After every healthy release, main's tip *is* the release commit, so it matches the `is_release_merge` pattern — every dispatch against a resting, healthy repo hits the `is_release_merge && -z tags` branch and fires the loudest alert in this file. It cries wolf on the most likely dispatch there is.
+2. **Query the freeze signature, then re-derive the verdict from main's tip message.** Turns the false positive into a false *negative*, deterministically. `references/develop-to-main-pr.md` mandates a **merge commit** for the promotion PR, so once any promotion lands after a freeze, main's tip subject is `Merge pull request #N from <owner>/develop` and matches neither signal. The one dispatch meant to unstick a frozen release reports green.
+3. **`::warning::` on a failed lookup.** Neither fails the run nor reaches Discord. On the one run whose job is detecting a freeze, "we could not tell" becomes indistinguishable from "nothing is wrong".
+
+What the version below does instead:
+
+- **Gates on the freeze signature, not on a commit message.** A **merged** release PR still labelled `autorelease: pending` is proof: release-please relabels to `autorelease: tagged` within seconds of a successful tag, so merged+pending means the tag never happened. (Open+pending is the *normal* state of an unmerged release PR — the `--state merged` filter is what keeps this from matching it.) This is the same query `release-health.yml`'s `pending-sweep` job already runs.
+- **Sets a separate `frozen=true` from that query alone, and ORs it into the alert condition.** The signature *is* the verdict. A dispatch that **proved** a freeze must never report green because a cosmetic follow-up call blipped.
+- **Names the stuck PR in the alert body, always.** main's tip commit is read only for readable context and is labelled as such — on the frozen path it is very often *not* the commit that merged the release PR (a later promotion merge, or an unrelated fix), so quoting it as the headline claim misattributes the freeze. The PR number is the evidence; the subject is colour.
+- **Reads main's sha and subject in one `gh api` call.** Two calls let the sha half fail silently — `|| echo ""` then falls back to the dispatched ref's tip, reproducing the exact mislink `commit_sha` exists to prevent — and admit a race where main advances between them, pairing a subject with a different sha.
+- **Retries the lookup 3× and *alerts* on total failure**, in its own branch placed **below** the tag branches — if this run cut and verified a tag, the outcome is known and a failed freeze lookup is moot. The `::error::` annotation is emitted **in that branch**, not at the lookup, so a run that ends healthy doesn't carry a red annotation.
+- **Sends the lookup's stderr to a file, never `2>&1` into the value.** `gh` writes advisory bytes to stderr on *successful* calls; folded into the capture, they make `stuck_pr` non-empty on a healthy repo, which reads main's tip, matches the release commit, and fires exactly the false alarm this gate exists to remove.
+- **Uses a random `GITHUB_OUTPUT` heredoc delimiter.** `lookup_err` is arbitrary third-party text going into a multi-line output; a literal `EOF` line in it would terminate the value early and let the rest parse as outputs — `released=true` / `alert=false` injected past a blind run. The base step doesn't need this (`head_line` is `head -n1`, so it cannot contain a newline); this one does.
+- **Emits `commit_sha`** so the alert links the commit the verdict was read from rather than the dispatched ref's tip. See the prerequisite above for why this is *not* enough to make a deploying workflow dispatch-safe.
+
+```yaml
+- name: Evaluate release outcome
+  id: check
+  if: always()
+  env:
+    RELEASE_OUTCOME: ${{ steps.release.outcome }}
+    OUTPUTS_JSON: ${{ toJSON(steps.release.outputs) }}
+    # May be empty — this workflow has a non-push trigger. Everything the
+    # `if [ -z "$HEAD_MSG" ]` block below does exists to cover that case.
+    HEAD_MSG: ${{ github.event.head_commit.message }}
+    REPO: ${{ github.repository }}
+    GH_TOKEN: ${{ github.token }}
+  run: |
+    alert=false
+    title=""
+    detail=""
+    released=false
+    # frozen — set ONLY from the definitive freeze signature (a MERGED release
+    # PR still labelled `autorelease: pending`). Kept separate from
+    # is_release_merge because it is PROOF, not an inference from a commit
+    # subject, and the alert branch below must not be able to lose it just
+    # because the commit message it also wanted was unreadable.
+    frozen=false
+    # Appended to the freeze alert body. The PR number is the evidence; main's
+    # tip subject quoted alongside it is only context, and on this path is
+    # frequently NOT the commit that merged the release PR.
+    frozen_note=""
+    # Set when we could not establish whether a release is frozen. NOT the same
+    # as "nothing is frozen" — it alerts, in its own branch below.
+    lookup_failed=false
+    lookup_err=""
+    # The commit the verdict was actually read from. github.sha is wrong for
+    # this on workflow_dispatch: it is the tip of the DISPATCHED ref, and a
+    # gitflow repo's default branch is develop, so the alert would quote main's
+    # release subject while linking an unrelated develop commit.
+    main_sha=""
+
+    # No head_commit on this event (workflow_dispatch/schedule). Establish the
+    # verdict from the freeze SIGNATURE, and use main's tip only for wording.
+    # Do NOT adopt main's tip as the signal: after every healthy release main's
+    # tip IS the release commit and matches is_release_merge below, so every
+    # dispatch against a resting repo would fire the loudest alert here.
+    if [ -z "$HEAD_MSG" ]; then
+      stuck_pr=""
+      err_file="${RUNNER_TEMP:-/tmp}/release-pr-lookup.err"
+      lookup_ok=false
+      # `gh pr list` is GraphQL, which references/tagged-deploy.md's auto-merge
+      # step deliberately avoids. That rule is exempted here, not forgotten: it
+      # exists because GraphQL quota is per-USER and so can be drained by an
+      # unrelated local `gh` session on the same account — which only bites the
+      # PAT-authenticated calls. This step runs as GITHUB_TOKEN, whose budget is
+      # per-REPO. release-health.yml's pending-sweep queries the same way.
+      for attempt in 1 2 3; do
+        # stderr to a FILE, never 2>&1 into the value: a successful gh call can
+        # still write advisory bytes, which would make stuck_pr non-empty on a
+        # healthy repo and fire a false freeze alarm.
+        if stuck_pr=$(gh pr list --repo "$REPO" --state merged \
+          --label "autorelease: pending" --limit 1 --json number \
+          --jq '.[0].number // ""' 2>"$err_file"); then
+          lookup_ok=true
+          break
+        fi
+        lookup_err=$(cat "$err_file")
+        stuck_pr=""
+        echo "  merged release PR lookup FAILED (attempt ${attempt}/3): ${lookup_err}"
+        if [ "$attempt" -lt 3 ]; then sleep 5; fi
+      done
+
+      if [ "$lookup_ok" != "true" ]; then
+        # No ::error:: here — the branch ordering below may still resolve this
+        # run as healthy (a tag was cut and verified), and a red annotation on a
+        # green run trains people to ignore annotations. It is emitted in the
+        # lookup_failed alert branch instead.
+        lookup_failed=true
+      elif [ -n "$stuck_pr" ]; then
+        # The signature alone is the verdict. Everything after this point is
+        # cosmetic — it cannot unset `frozen`.
+        frozen=true
+        frozen_note=$(printf '\n\n%s' "Freeze signature: merged release PR #${stuck_pr} is still labelled \`autorelease: pending\`. Any commit subject quoted above is main's tip, shown as context only — on this path it is often not the commit that merged the release PR.")
+        echo "No head_commit on this event; merged release PR #${stuck_pr} is still 'autorelease: pending' — the release IS frozen."
+        # ONE call for both fields. Two calls let the sha half fail silently and
+        # fall back to the dispatched ref's tip — the exact mislink commit_sha
+        # exists to prevent — and let main advance between them.
+        if main_tip=$(gh api "repos/${REPO}/commits/main" --jq '.sha + "\t" + .commit.message' 2>/dev/null); then
+          main_sha=${main_tip%%$'\t'*}
+          HEAD_MSG=${main_tip#*$'\t'}
+        else
+          echo "::warning::Could not read main's tip commit; the alert will name the PR only."
+          HEAD_MSG="merged release PR #${stuck_pr} (main's tip commit was unreadable)"
+        fi
+      else
+        echo "No head_commit on this event, and no merged release PR is stuck at 'autorelease: pending' — nothing is frozen."
+      fi
+    fi
+    head_line=$(printf '%s\n' "$HEAD_MSG" | head -n1)
+
+    # Unchanged from the push-only version — see the component-in-title trap above.
+    is_release_merge=false
+    if printf '%s' "$head_line" | grep -Eq '^chore(\([^)]*\))?: release +([^ ]+ +)?v?[0-9]+\.[0-9]+\.[0-9]+'; then
+      is_release_merge=true
+    fi
+
+    tags=$(printf '%s' "$OUTPUTS_JSON" | jq -r 'to_entries[] | select(.key | endswith("tag_name")) | .value | select(. != null and . != "")')
+    context="releases_created=$(printf '%s' "$OUTPUTS_JSON" | jq -r '.releases_created // "<empty>"'), paths_released=$(printf '%s' "$OUTPUTS_JSON" | jq -r '.paths_released // "<empty>"')"
+
+    missing=""
+    for tag in $tags; do
+      found=false
+      for attempt in 1 2 3; do
+        if gh api "repos/${REPO}/git/ref/tags/${tag}" >/dev/null 2>&1; then
+          found=true
+          break
+        fi
+        if [ "$attempt" -lt 3 ]; then sleep 5; fi
+      done
+      if [ "$found" = "true" ]; then
+        echo "OK: tag ${tag} exists."
+      else
+        missing="${missing} ${tag}"
+      fi
+    done
+
+    if [ "$RELEASE_OUTCOME" = "failure" ]; then
+      alert=true
+      title="❌ ${REPO} — release-please step failed"
+      detail="The release-please action failed. No release PR / tag / release was produced this run."
+    elif { [ "$is_release_merge" = "true" ] || [ "$frozen" = "true" ]; } && [ -z "$tags" ]; then
+      # `frozen` is ORed in, not folded into is_release_merge: the proof must
+      # reach this branch even when the commit subject is unreadable or is a
+      # promotion merge commit that matches no pattern.
+      alert=true
+      title="🟥 ${REPO} — release PR merged but NO TAG created"
+      detail="Merged \`${head_line}\` but release-please reported no tag (${context}). This is the silent freeze — check the title-pattern/component config.${frozen_note}"
+    elif [ -n "$missing" ]; then
+      alert=true
+      title="🟥 ${REPO} — release reported but tag missing"
+      detail="release-please reported tag(s):${missing} but the ref does not exist on the remote (${context})."
+    elif [ -n "$tags" ]; then
+      echo "OK: tagged $(printf '%s' "$tags" | tr '\n' ' ') (${context})."
+      released=true
+    elif [ "$lookup_failed" = "true" ]; then
+      # Deliberately BELOW the tag branches: if this run cut and verified a tag,
+      # the outcome is known and a failed freeze lookup is moot.
+      echo "::error::Could not list merged release PRs after 3 attempts; freeze detection was blind this run."
+      alert=true
+      title="🟧 ${REPO} — could not determine whether a release is frozen"
+      # Built with printf, not a multi-line string literal: a literal's
+      # continuation lines carry this block's YAML indentation into the value,
+      # which indents the code fence and stops it rendering in the alert.
+      detail=$(printf '%s\n%s\n%s\n%s' \
+        "This run had no head_commit (a manual dispatch), and listing merged \`autorelease: pending\` PRs failed on all 3 attempts — so freeze detection was blind. Nothing is known to be broken, but nothing is confirmed healthy either. Re-run, or check the release PRs by hand." \
+        '```' "$lookup_err" '```')
+    else
+      echo "OK: no release expected this run (feature push or PR-only update)."
+    fi
+
+    # Random heredoc delimiter: `detail` can carry arbitrary third-party text
+    # (gh's stderr). A literal `EOF` line inside it would close the value early
+    # and let the remainder parse as outputs — an attacker-free but very real
+    # way to inject `alert=false` / `released=true` past a blind run.
+    delim="EOF_$(openssl rand -hex 8)"
+    {
+      echo "alert=$alert"
+      echo "title=$title"
+      echo "released=$released"
+      echo "commit_sha=${main_sha:-$GITHUB_SHA}"
+      echo "detail<<${delim}"
+      echo "$detail"
+      echo "${delim}"
+    } >> "$GITHUB_OUTPUT"
+
+- name: Alert on failure
+  if: ${{ always() && steps.check.outputs.alert == 'true' }}
+  uses: ./.github/actions/discord-alert
+  with:
+    webhook: ${{ secrets.<ALERT_WEBHOOK_SECRET> }}
+    title: ${{ steps.check.outputs.title }}
+    description: |
+      ${{ steps.check.outputs.detail }}
+
+      **Commit:** [`${{ steps.check.outputs.commit_sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.check.outputs.commit_sha }})
+      **Repo:** ${{ github.server_url }}/${{ github.repository }}
+      [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · [Release PRs](${{ github.server_url }}/${{ github.repository }}/pulls?q=is%3Apr+label%3A%22autorelease%3A+pending%22)
+```
+
+`Fail the run if a release was expected but missing` is unchanged — it already keys off `steps.check.outputs.alert`.
 
 ## 2. `.github/workflows/release-health.yml`
 

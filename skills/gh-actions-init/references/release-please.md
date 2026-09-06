@@ -24,6 +24,12 @@ Steps 3–5 are the "tagged-only deploy" model: platform auto-deploy is off, so 
 name: release-please
 
 on:
+  # ⚠️ push-ONLY is load-bearing. The `Evaluate release outcome` step folded in
+  # below reads `github.event.head_commit`, which is null on every other event —
+  # adding `workflow_dispatch:` (a tempting manual re-fire) makes the whole
+  # freeze detector unreachable dead code and the run green on a frozen release.
+  # If you add a non-push trigger you MUST swap in the drop-in replacement step
+  # from references/release-verification.md ("Adding workflow_dispatch").
   push:
     branches: [main]
 
