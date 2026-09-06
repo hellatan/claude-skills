@@ -1,0 +1,88 @@
+name: claude-code-review
+
+# This repo is PUBLIC, so the trigger choice is a security decision:
+# `pull_request` runs in the CONTEXT OF THE FORK for a fork PR — read-only
+# token, no repository secrets — so a fork PR simply can't reach
+# CLAUDE_CODE_OAUTH_TOKEN. `pull_request_target` would run in the BASE repo's
+# context with secrets and write permissions while the PR's code is untrusted,
+# which is the classic token-exfiltration hole. Never switch this to
+# pull_request_target.
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Skip release-please PRs and develop<->main promotion/backmerge PRs
+    # Also skip drafts: `opened` fires for a PR opened as a draft, so without
+    # this a draft gets reviewed on open and then AGAIN on ready_for_review —
+    # the second run against byte-identical code if no push happened in
+    # between. Reviewing a draft isn't wanted anyway; this makes
+    # ready_for_review the first review rather than a repeat of the previous
+    # one.
+    #
+    # The head-repo check is the public-repo half: a fork PR gets no secrets,
+    # so without it the action step would fail with an empty token on every
+    # outside contribution — a red X that looks like the contributor's fault.
+    # Skipping cleanly is the honest outcome.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref != 'develop' &&
+      github.head_ref != 'main' &&
+      !startsWith(github.head_ref, 'release-please')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            Review this pull request for real defects only: correctness bugs,
+            logic errors, security vulnerabilities, data-loss risks, missing
+            error handling, and broken behavior. Do NOT comment on prose style
+            or wording preference. Post inline comments on the specific lines;
+            keep each finding concise and actionable. If the PR looks good, say
+            so plainly.
+
+            This repo is a monorepo of Claude skills — one folder per skill
+            under `skills/<name>/`, each with a SKILL.md. Repo-specific checks
+            (high priority):
+            - THIS REPO IS PUBLIC. Flag any secret, API key, token, private
+              hostname, internal URL, personal filesystem path
+              (`/Users/<name>/…`), or reference to a private repo or private
+              infrastructure that a changed file would publish.
+            - `name` in a SKILL.md's frontmatter must match its folder name,
+              and the frontmatter must be present and well-formed —
+              `scripts/validate.sh` enforces this and CI runs it.
+            - A `description` must be "pushy": explicit trigger contexts, so
+              the skill actually gets invoked. Flag vague descriptions.
+            - Skills compose, and each domain has exactly ONE owning skill
+              (test commands -> testing-init, CI job structure and workflows /
+              release-please -> gh-actions-init, branches and protection ->
+              gitflow-init, hooks -> precommit-init, CLAUDE.md ->
+              claude-md-init). Flag a change that duplicates another skill's
+              owned content instead of cross-referencing it by path; a
+              one-line summary at the point of use is fine, a second full copy
+              is not.
+            - `scripts/install.sh` symlinks skills into `~/.claude/skills/` and
+              PRUNES links for skills this repo no longer has. Flag changes to
+              it that could remove or overwrite a link this repo does not own —
+              a second skill manager shares that namespace.
+            - Shell scripts: flag unquoted expansions, missing `set -euo
+              pipefail` intent, and a pipe that masks the exit code of the
+              command that matters.
