@@ -212,6 +212,13 @@ These steps go on the **same** `release-please` job (reusing its runner — no e
     # Ground truth is the ref on the remote. Retried, so ref propagation lag right
     # after the tag is cut can't manufacture a false alarm.
     missing=""
+    # The commit the verified tag actually points at — what the deploy step
+    # ships. NOT github.sha: that is the tagged commit only on a `push` to the
+    # release branch. On a workflow_dispatch it is the tip of the DISPATCHED
+    # ref, which gitflow-init makes `develop`, so a dispatch that recovers a
+    # stuck release would ship develop's tip to production as if it were the
+    # release. See references/tagged-deploy.md, which consumes this.
+    deploy_sha=""
     for tag in $tags; do
       found=false
       for attempt in 1 2 3; do
@@ -223,6 +230,11 @@ These steps go on the **same** `release-please` job (reusing its runner — no e
       done
       if [ "$found" = "true" ]; then
         echo "OK: tag ${tag} exists."
+        if [ -z "$deploy_sha" ]; then
+          # /commits/<ref> dereferences the tag to its commit, so this is
+          # correct for lightweight and annotated tags alike.
+          deploy_sha=$(gh api "repos/${REPO}/commits/${tag}" --jq '.sha' 2>/dev/null || echo "")
+        fi
       else
         missing="${missing} ${tag}"
       fi
@@ -281,6 +293,8 @@ These steps go on the **same** `release-please` job (reusing its runner — no e
       # ref, which is exactly why the frozen branch sets verdict_sha to main's
       # SHA rather than relying on it.
       echo "commit_sha=${verdict_sha:-$GITHUB_SHA}"
+      # The commit the DEPLOY must ship — empty unless a tag was verified.
+      echo "deploy_sha=$deploy_sha"
       echo "detail<<${delim}"
       echo "$detail"
       echo "${delim}"
@@ -295,7 +309,7 @@ These steps go on the **same** `release-please` job (reusing its runner — no e
     description: |
       ${{ steps.check.outputs.detail }}
 
-      **Commit:** [`${{ steps.check.outputs.commit_sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.check.outputs.commit_sha }})
+      **Commit:** [`${{ steps.check.outputs.commit_sha || github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.check.outputs.commit_sha || github.sha }})
       **Repo:** ${{ github.server_url }}/${{ github.repository }}
       [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · [Release PRs](${{ github.server_url }}/${{ github.repository }}/pulls?q=is%3Apr+label%3A%22autorelease%3A+pending%22)
 
@@ -358,7 +372,13 @@ So the verdict comes from the **freeze proof**, not from a commit subject: a **m
 
 Two smaller ones in the same step: the `$GITHUB_OUTPUT` heredoc delimiter is **randomised** (`detail` can carry gh stderr, and a line equal to a fixed `EOF` truncates the value and fails the step *after* the verdict was computed, so the alert never sends), and gh stderr is **truncated** before it reaches `detail` (Discord rejects embed descriptions over 4096 chars with HTTP 400 — a long error would kill the alert on the one run that needed it).
 
-**Known gap, deliberately left:** the freeze proof only runs when `HEAD_MSG` is empty. On an ordinary `push` to main, an *already*-frozen pipeline still reports green on every subsequent promotion merge, because that push's own head commit is a promotion merge and no tag was expected of it. `release-health.yml`'s daily sweep is what catches that case today. Lifting the proof out of the `if` so it runs on every event would close it; do that in one change across every repo running these steps rather than letting the canonical copy and the live workflows diverge.
+**Known gaps, deliberately left** — all three are covered by `release-health.yml`'s daily sweep, which queries the same merged+pending signature unconditionally. Keep them consistent with the live workflows; close them in one change across every repo running these steps rather than letting the canonical copy diverge.
+
+1. **The proof only runs when `HEAD_MSG` is empty.** On an ordinary `push` to main, an *already*-frozen pipeline reports green on every subsequent promotion merge, because that push's own head commit is a promotion merge and no tag was expected of it. Lifting the query out of the `if` would close this.
+2. **A proven freeze is discarded when the same run cut any tag.** `frozen` only reaches an alert through a branch that also requires `[ -z "$tags" ]`, so the chain falls through to `released=true`. Reachable on the per-component monorepo config: one component's release PR is stuck merged+pending while another tags cleanly.
+3. **A proven freeze is discarded when the release-please step itself failed.** That branch wins the chain and reports a transient action failure, never naming the merged+pending PR that is blocking every future release.
+
+Note also that the `nothing is frozen` log line rules out only the *merged*+pending signature. A release stalled with its release PR still **open** — the auto-merge check-gate refusal path — is invisible to this query by design; see `references/tagged-deploy.md`.
 
 ## 2. `.github/workflows/release-health.yml`
 
