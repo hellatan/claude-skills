@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.9.2](https://github.com/hellatan/ai-skills/compare/v2.9.1...v2.9.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** derive the release freeze verdict from proof, not main's tip ([#212](https://github.com/hellatan/ai-skills/issues/212)) ([1ead57a](https://github.com/hellatan/ai-skills/commit/1ead57a492784435c9f001da474c8eb8ed7eb0f0))
+* **gh-actions-init:** derive the dispatch freeze verdict from the freeze proof ([#208](https://github.com/hellatan/ai-skills/issues/208)) ([4a57c81](https://github.com/hellatan/ai-skills/commit/4a57c81f370555317dea2bbf308a935945e09355))
+
+
+### Chores
+
+* **release:** develop → main ([999d318](https://github.com/hellatan/ai-skills/commit/999d3180f1276bf64bea9b4c761e539fcd7f22e0))
+
+
+### Tests
+
+* **gh-actions-init:** execute release-verification.md's embedded shell in CI ([#210](https://github.com/hellatan/ai-skills/issues/210)) ([5ce092c](https://github.com/hellatan/ai-skills/commit/5ce092c94266c498860af6cf08dbc6d04799d085))
+
 ## [2.9.1](https://github.com/hellatan/ai-skills/compare/v2.9.0...v2.9.1) (2026-09-06)
 
 
