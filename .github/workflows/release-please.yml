@@ -234,6 +234,15 @@ jobs:
           # Ground truth is the ref on the remote. Retried, so ref propagation lag right
           # after the tag is cut can't manufacture a false alarm.
           missing=""
+          # The commit the verified tag actually points at — what a deploy step
+          # ships. NOT github.sha: that is the tagged commit only on a `push` to the
+          # release branch. On a workflow_dispatch it is the tip of the DISPATCHED
+          # ref, which gitflow makes `develop`, so a dispatch that recovers a stuck
+          # release would ship develop's tip to production as if it were the release.
+          # THIS repo has no deploy step, so nothing reads it here — it is emitted to
+          # keep this workflow diffable against the canonical copy, and correct in
+          # advance for the day this repo gains one. See references/tagged-deploy.md.
+          deploy_sha=""
           for tag in $tags; do
             found=false
             for attempt in 1 2 3; do
@@ -245,6 +254,11 @@ jobs:
             done
             if [ "$found" = "true" ]; then
               echo "OK: tag ${tag} exists."
+              if [ -z "$deploy_sha" ]; then
+                # /commits/<ref> dereferences the tag to its commit, so this is
+                # correct for lightweight and annotated tags alike.
+                deploy_sha=$(gh api "repos/${REPO}/commits/${tag}" --jq '.sha' 2>/dev/null || echo "")
+              fi
             else
               missing="${missing} ${tag}"
             fi
@@ -303,6 +317,8 @@ jobs:
             # ref, which is exactly why the frozen branch sets verdict_sha to main's
             # SHA rather than relying on it.
             echo "commit_sha=${verdict_sha:-$GITHUB_SHA}"
+            # The commit a DEPLOY must ship — empty unless a tag was verified.
+            echo "deploy_sha=$deploy_sha"
             echo "detail<<${delim}"
             echo "$detail"
             echo "${delim}"
@@ -564,7 +580,7 @@ jobs:
           description: |
             ${{ steps.check.outputs.detail }}
 
-            **Commit:** [`${{ steps.check.outputs.commit_sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.check.outputs.commit_sha }})
+            **Commit:** [`${{ steps.check.outputs.commit_sha || github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.check.outputs.commit_sha || github.sha }})
             **Repo:** ${{ github.server_url }}/${{ github.repository }}
             [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · [Release PRs](${{ github.server_url }}/${{ github.repository }}/pulls?q=is%3Apr+label%3A%22autorelease%3A+pending%22)
 
