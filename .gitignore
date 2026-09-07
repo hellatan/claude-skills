@@ -18,10 +18,3 @@ Thumbs.db
 
 # Logs
 *.log
-
-# actionlint downloaded by scripts/test-release-steps.sh
-.cache/
-
-# Python bytecode
-__pycache__/
-*.pyc
