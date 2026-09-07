@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# No-op sleep so the step's retry backoffs don't make the suite take minutes.
+exit 0
