@@ -1,5 +1,5 @@
 name: discord-alert
-description: Post an alert embed to the gh_errors Discord channel. No-op (warns) if the webhook secret is unset.
+description: Record an alert on the run summary, and push it to Discord when a webhook is configured.
 
 inputs:
   webhook:
