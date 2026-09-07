@@ -12,30 +12,7 @@ jobs:
   validate:
     name: validate
     runs-on: ubuntu-latest
-    # The step suite fetches a pinned actionlint, so this job now does network
-    # I/O. Without a cap a stalled transfer is a 6-hour job holding a runner,
-    # not a red X.
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-      - run: chmod +x scripts/*.sh
-
-      # `npm test` is the documented contributor entry point (README), so CI runs
-      # exactly that rather than the scripts directly — otherwise the package.json
-      # wiring could break while CI stayed green.
-      #
-      # It runs scripts/validate.sh (skill structure) and then the step suite: the
-      # `Evaluate release outcome` step in
-      # skills/gh-actions-init/references/release-verification.md is shell embedded
-      # in YAML embedded in Markdown, so validate.sh never looked at it and
-      # actionlint never saw it, and it drifted behind the workflows it is
-      # canonical for.
-      #
-      # ShellCheck is a hard dependency of the lint pass (actionlint drops its
-      # shell analysis without it). It ships preinstalled on ubuntu-latest, so
-      # there is no install step — but that IS a dependency on the runner image.
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - run: python -m pip install --quiet "pyyaml==6.*"
-      - run: npm test
+      - run: chmod +x scripts/validate.sh
+      - run: ./scripts/validate.sh
