@@ -282,11 +282,14 @@ CASES = [
         # subject is a promotion merge, so is_release_merge stays false; no tags, so
         # nothing alerts. A provably frozen pipeline reports healthy.
         #
-        # This is the "Known gap, deliberately left" in release-verification.md: the
-        # proof only runs when HEAD_MSG is empty. Closing it means gating on `-z
-        # "$tags"` instead, in one change across every repo running these steps —
-        # not by editing this expectation. `release-health.yml`'s daily sweep is
-        # what catches this case today, within ~24h.
+        # This is gap 1 of the three "Known gaps, deliberately left" in
+        # release-verification.md: the proof only runs when HEAD_MSG is empty.
+        # Closing it means gating on `-z "$tags"` instead, in one change across
+        # every repo running these steps — not by editing this expectation.
+        # `release-health.yml`'s daily sweep is what catches this case today,
+        # within ~24h. Gaps 2 and 3 (a proven freeze discarded when the same run
+        # cut a tag, and when the release-please step itself failed) have no case
+        # yet.
         "push/frozen-prior-release+promotion-merge-KNOWN-GAP",
         dict(
             HEAD_MSG=PROMOTION_SUBJECT,

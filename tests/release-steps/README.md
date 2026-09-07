@@ -140,8 +140,8 @@ the tip subject is a promotion merge, so nothing matches; no tags, so nothing
 alerts. A provably frozen pipeline reports healthy — and this is the one freeze
 state reachable under a `push`-only trigger.
 
-That is the "Known gap, deliberately left" in `release-verification.md`: the proof
-runs only when `HEAD_MSG` is empty. Closing it means gating on `-z "$tags"`
+That is gap 1 of the three "Known gaps, deliberately left" in
+`release-verification.md`: the proof runs only when `HEAD_MSG` is empty. Closing it means gating on `-z "$tags"`
 instead, in one change across every repo running these steps — not by editing that
 expectation. `release-health.yml`'s daily sweep catches the case within ~24h. The
 day someone fixes the gate, this case goes red and forces the fix to be
@@ -153,6 +153,9 @@ acknowledged here.
   `skills/*/references/` still carries runnable blocks that nothing executes.
 - The `release-health.yml` sweep steps are linted and `bash -n`-checked but not
   driven through cases.
+- Gaps 2 and 3 documented in `release-verification.md` — a proven freeze discarded
+  when the same run cut any tag, and when the release-please step itself failed —
+  have no case yet, characterization or otherwise.
 - No case sets `OUTPUTS_JSON` to `null` — what `toJSON(steps.release.outputs)`
   yields if the `id: release` reference ever breaks. The step dies at the first
   `jq` in that state, before writing any output, so no alert would send. Closing
