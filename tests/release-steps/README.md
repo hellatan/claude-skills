@@ -63,7 +63,7 @@ blind while looking busy:
 
 ## The cases
 
-22 cases over the event/state cross product, because the two events differ in the
+23 cases over the event/state cross product, because the two events differ in the
 one input the verdict used to depend on:
 
 - **`workflow_dispatch`** (no `head_commit`, so `HEAD_MSG` is empty) × healthy /
@@ -75,7 +75,8 @@ one input the verdict used to depend on:
 - **`push`** (subject present) × freeze / freeze-with-a-component-in-the-title /
   `chore: release notes cleanup`-is-not-a-release / a-release-shaped-line-in-the-body /
   tagged / tagged-with-namespaced-outputs / tagged-with-tag-ref-propagation-lag /
-  missing-tag / ordinary / release-please-action-failed.
+  missing-tag / ordinary / release-please-action-failed /
+  a-prior-release-is-frozen-and-a-promotion-merge-lands.
 
 Several exist specifically because they are the cases a *plausible* implementation
 gets wrong: `frozen+promotion-merge-on-main` is green under any verdict re-derived
@@ -130,12 +131,31 @@ world (`STUB_PRLIST`, `STUB_MAIN`, `STUB_TAGS_FOUND`, `STUB_TAG_FLAKY`,
 or extend a mutant that the new case — and ideally only the new case — catches,
 and confirm it goes red.
 
+One case is a **characterization test, not an endorsement**:
+`push/frozen-prior-release+promotion-merge-KNOWN-GAP` asserts `alert=false` — the
+*wrong* answer — because that is what the step does today. An earlier release froze
+(release PR merged, never tagged, still `autorelease: pending`); a later promotion
+merge pushes to main; `head_commit` exists, so the freeze proof is never queried;
+the tip subject is a promotion merge, so nothing matches; no tags, so nothing
+alerts. A provably frozen pipeline reports healthy — and this is the one freeze
+state reachable under a `push`-only trigger.
+
+That is gap 1 of the three "Known gaps, deliberately left" in
+`release-verification.md`: the proof runs only when `HEAD_MSG` is empty. Closing it means gating on `-z "$tags"`
+instead, in one change across every repo running these steps — not by editing that
+expectation. `release-health.yml`'s daily sweep catches the case within ~24h. The
+day someone fixes the gate, this case goes red and forces the fix to be
+acknowledged here.
+
 ## Known gaps
 
 - Only `release-verification.md` is covered. Every other reference file under
   `skills/*/references/` still carries runnable blocks that nothing executes.
 - The `release-health.yml` sweep steps are linted and `bash -n`-checked but not
   driven through cases.
+- Gaps 2 and 3 documented in `release-verification.md` — a proven freeze discarded
+  when the same run cut any tag, and when the release-please step itself failed —
+  have no case yet, characterization or otherwise.
 - No case sets `OUTPUTS_JSON` to `null` — what `toJSON(steps.release.outputs)`
   yields if the `id: release` reference ever breaks. The step dies at the first
   `jq` in that state, before writing any output, so no alert would send. Closing

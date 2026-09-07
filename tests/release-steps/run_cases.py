@@ -270,6 +270,36 @@ CASES = [
         dict(alert="true", released="false", title_has="tag missing"),
     ),
     (
+        # CHARACTERIZATION, NOT AN ENDORSEMENT. This asserts what the step does
+        # today, which is the WRONG answer, so that the day someone fixes it this
+        # case goes red and forces the fix to be acknowledged here.
+        #
+        # The state: an earlier release froze (release PR #42 merged, never tagged,
+        # still `autorelease: pending`). A later promotion merge pushes to main.
+        # release-please aborts with "There are untagged, merged release PRs
+        # outstanding" and exits 0 with no tags. head_commit EXISTS on a push, so
+        # HEAD_MSG is non-empty, so the freeze proof is never queried; the tip
+        # subject is a promotion merge, so is_release_merge stays false; no tags, so
+        # nothing alerts. A provably frozen pipeline reports healthy.
+        #
+        # This is gap 1 of the three "Known gaps, deliberately left" in
+        # release-verification.md: the proof only runs when HEAD_MSG is empty.
+        # Closing it means gating on `-z "$tags"` instead, in one change across
+        # every repo running these steps — not by editing this expectation.
+        # `release-health.yml`'s daily sweep is what catches this case today,
+        # within ~24h. Gaps 2 and 3 (a proven freeze discarded when the same run
+        # cut a tag, and when the release-please step itself failed) have no case
+        # yet.
+        "push/frozen-prior-release+promotion-merge-KNOWN-GAP",
+        dict(
+            HEAD_MSG=PROMOTION_SUBJECT,
+            OUTPUTS_JSON=NO_TAGS,
+            STUB_PRLIST="ok:42",
+            STUB_MAIN=f"ok:{MAIN_SHA}\t{PROMOTION_SUBJECT}",
+        ),
+        dict(alert="false", released="false"),
+    ),
+    (
         "push/ordinary",
         dict(HEAD_MSG="feat(api): add a widget", OUTPUTS_JSON=NO_TAGS),
         dict(alert="false", released="false"),
