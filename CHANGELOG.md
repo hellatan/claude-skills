@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.9.3](https://github.com/hellatan/ai-skills/compare/v2.9.2...v2.9.3) (2026-09-07)
+
+
+### Reverts
+
+* remove the release-freeze detection apparatus from the scaffold ([#214](https://github.com/hellatan/ai-skills/issues/214)) ([cf4e400](https://github.com/hellatan/ai-skills/commit/cf4e400feb2088b13c56cebb8154fc56c48bf63e))
+
+
+### Chores
+
+* **release:** develop → main ([1e01471](https://github.com/hellatan/ai-skills/commit/1e01471e0f9a02979f1e4d0e78ea6144f4a0d9d7))
+
 ## [2.9.2](https://github.com/hellatan/ai-skills/compare/v2.9.1...v2.9.2) (2026-09-07)
 
 
